@@ -1,0 +1,270 @@
+==========================================================================
+PSSG
+GetPeakShiftState
+==========================================================================
+In Parameter:
+DWORD
+bit 31-0 : Reserved (0)
+Mast be Zero
+
+Out Parameter:
+DWORD
+Return Value:
+Bit 3-0: Inhibit charge status
+Bit 0: Inhibit charge status
+  (0:Allow charge   1:Inhibit charge)
+Bit 3-1: Reserved (0)
+Bit 7-4: Capability of Peak shift
+Bit 4: Discharge with AC function
+  (0:Not support   1:Support)
+Bit 5: Inhibit charge function
+  (0:Not support)   1:Support)  
+Bit 6:Inhibit charge auto reset function
+  (0:NOt support   1:Support))
+Bit 7:Reserved (0)
+Bit 23-8: Inhibit charge effective timer (Unit: 1min)
+  (This setting is valid only when inhibit charge is enabled)
+  = 0000h: Inhibit charge is disabled
+  = 0001h-05A0h: Inhibit charge effective time (Current interval value)
+  = FFFFh: Effective permanently
+Bit 30-24: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+PSSS
+SetPeakShiftState
+==========================================================================
+In Parameter:
+DWORD
+Bit 3-0: Inhibit charge status
+Bit 0: Inhibit charge status
+  (0:Allow charge   1:Inhibit charge)
+Bit 3-1: Reserved (0)
+Bit 7-4: Reserved (0)
+Bit 23-8: Inhibit charge effective timer (Unit: 1min)
+  (This setting is valid only when inhibit charge is enabled)
+  = 0000h: Inhibit charge is disabled
+  = 0001h-05A0h: Inhibit charge effective time (Current interval value)
+  = FFFFh: Effective permanently
+Bit 31-24: Reserved (0)
+
+
+Out Parameter:
+DWORD
+Bit 30-0: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+PSBS
+Get Battery InhibitChargeState
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0:BatteryID
+Bit 15-7: Peak shift discharge status
+Bit 7: Discharge request
+  (0:Disable(Stop Discharge)   1:Enable(Start Discharge))
+Bit 15-8: Reserved (0)
+Bit 31-16: Reserved (0)
+  Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 30-0: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+BICS
+Set Battery InhibitChargeState
+==========================================================================
+In Parameter:
+DWORD
+Bit 3-0: Inhibit charge status
+Bit 0: Inhibit charge status
+  (0:Allow charge   1:Inhibit charge)
+Bit 3-1: Reserved (0)
+Bit 5-4:BatteryID
+  = 00b: Any battery
+  = 01b: Primary battery
+  = 10b: Secondary battery
+  = 11b: Reserved (0)
+Bit 7-6: Reserved (0)
+Bit 23-8: Inhibit charge effective timer (Unit: 1min)
+  (This setting is valid only when inhibit charge is enabled)
+  = 0000h: Inhibit charge is disabled
+  = 0001h-05A0h: Inhibit charge effective time (Current interval value)
+  = FFFFh: Effective permanently
+Bit 31-24: Reserved (0)
+  Mast be Zero
+
+Out Parameter:
+DWORD
+bit 31-0 : Reserved (0)
+  Mast be Zero
+
+==========================================================================
+BCTG
+GetBatteryCharge Capacity Threshold
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0:BatteryID
+Bit 31-8: Reserved (0)
+  Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 7-0: Charge start capacity (Unit:%)
+  =0: Use battery default setting
+  =1-99: Threshold to start charging battery (Relative capacity)
+  =Others: Reserved (0)
+Bit 9-8: Capability ofBatteryCharge Capacity Threshold
+Bit 8:Batterycharge capacity threshold
+  (0:Not support   1:Support)
+Bit 9: Specify every battery parameter
+  (0:Not support(apply parameter for all battery)   1:Support(apply parameter for all battery))  
+Bit 30-10: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+  Mast be Zero
+
+==========================================================================
+BCCS
+SetBatteryCharge Capacity Threshold
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0: Charge start capacity (Unit:%)
+  =0: Use battery default setting
+  =1-99: Threshold to start charging battery (Relative capacity)
+Bit 9-8:BatteryID
+  = 0: Any battery
+  = 1: Primary battery
+  = 2: Secondary battery
+  = Others: Reserved (0)
+Bit 31-10: Reserved (0)
+ Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 30-0: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+BCSG
+GetBatteryCharge Stop Capacity Threshold
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0:BatteryID
+Bit 31-8: Reserved (0)
+Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 7-0: Charge stop capacity (Unit:%)
+  =0: Use battery default setting
+  =1-99: Threshold to stop charging battery (Relative capacity)
+  =Others: Reserved (0)
+Bit 9-8: Capability ofBatteryCharge Stop Capacity Threshold
+Bit 8:Batterycharge stop capacity threshold
+  (0:Not support   1:Support)
+Bit 9: Specify every battery parameter
+  (0:Not support(apply parameter for all battery)
+   1:Support(apply parameter for all battery))
+Bit 30-10: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+ Mast be Zero
+
+==========================================================================
+BCSS
+SetBatteryCharge Stop Capacity Threshold
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0: Charge stop capacity (Unit:%)
+  =0: Use battery default setting
+  =1-99: Threshold to stop charging battery (Relative capacity)
+Bit 9-8:BatteryID
+  = 0: Any battery
+  = 1: Primary battery
+  = 2: Secondary battery
+  = Others: Reserved (0)
+Bit 31-10: Reserved (0)
+ Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 30-0: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+BDSG
+GetBatteryDischargeState
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0:BatteryID
+Bit 31-8: Reserved (0)
+ Mast be Zero
+
+Out Parameter:
+Bit 7-0:Batterydischarge status
+Bit 0: Discharge request
+  (0:Disable(Stop Discharge)   1:Enable(Start Discharge))
+Bit 1: Enable breaking condition by AC detach
+(0:Disable(don't break by AC detaching)   1:Enable(break by AC detaching))
+Bit 7-2: Reserved (0)
+Bit 10-8: Capability of battery discharge function
+Bit 8: Discharge function
+(0:Not support   1:Support)
+Bit 9: Specify every battery parameter
+(0:Not support(apply parameter for all battery)   1:Support(apply parameter for all battery))  
+Bit 10:Enable breaking condition by AC detaching
+(0:Not support   1:Support))
+Bit 30-11: Reserved (0)
+Bit 31:     Error status
+            0 ... Success
+            1 ... Fail
+
+==========================================================================
+BDSS
+SetBatteryDischargeState
+==========================================================================
+In Parameter:
+DWORD
+Bit 7-0:Batterydischarge status
+Bit 0: Discharge request
+(0:Disable(Stop Discharge)   1:Enable(Start Discharge))
+Bit 1: Enable breaking condition by AC detach
+(0:Disable(don't break by AC detaching)   1:Enable(break by AC detaching))
+Bit 7-2: Reserved (0)
+Bit 9-8:BatteryID
+= 0: Any battery
+= 1: Primary battery
+= 2: Secondary battery
+= Others: Reserved (0)
+Bit 31-10: Reserved (0)
+Mast be Zero
+
+Out Parameter:
+DWORD
+Bit 30-0: Reserved (0)
+Bit 31:     Error status (1:Error 0:OK)
+            0 ... Success
+            1 ... Fail
+ Mast be Zero
+
