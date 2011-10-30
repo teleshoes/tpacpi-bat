@@ -23,7 +23,7 @@
 # Makes ACPI calls using the acpi_call kernel module, which is REQUIRED.
 #
 # Supports 2011-released thinkpads, and possibly later ones.
-# Tested and works on: W520
+# Tested and works on: W520, T420
 # Tested and does NOT work on: T400
 #
 # Limitations/Known Issues:
