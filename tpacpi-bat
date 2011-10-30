@@ -1,0 +1,208 @@
+#!/usr/bin/perl
+#########################################################################
+# Thinkpad ACPI Battery Control
+# Copyright 2011 Elliot Wolk
+##########################################################################
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#########################################################################
+#
+# Exposes inhibitCharge, start/stop charge threshold, and force discharge
+# through ACPI as an alternative to SMAPI, which is broken in W520, etc.
+#
+# Makes ACPI calls using the acpi_call kernel module, which is REQUIRED.
+#
+# Supports 2011-released thinkpads, and possibly later ones.
+# Tested and works on: W520
+# Tested and does NOT work on: T400
+#
+# Limitations/Known Issues:
+# 1) you cant force discharge on battery, so balancing is still impossible
+# 2) sometimes you cant convince a slice battery to charge before the main
+##########################################################################
+use strict;
+use warnings;
+
+my $acpiCallDev = '/proc/acpi/call';
+my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
+
+sub peakShiftState($$);
+sub inhibitCharge($$$);
+sub startChargeThreshold($$);
+sub stopChargeThreshold($$);
+sub forceDischarge($$$);
+
+sub acpiCall($);
+sub binToHex($);
+sub bits($);
+sub revpadzero($$);
+
+sub main(@){
+  my $cmd = shift() || '';
+  my $bits;
+  my $method;
+  if($cmd eq 'peakShiftState' and @_ == 2){
+    my $inhibit = shift;
+    my $min = shift;
+    $bits = peakShiftState bits $inhibit, bits $min;
+    $method = 'PSSS';
+  }elsif($cmd eq 'inhibitCharge' and (@_ == 2 or @_ == 3)){
+    my $bat = shift;
+    my $inhibit = shift;
+    my $min = shift() || 0;
+    $bits = inhibitCharge bits $bat, bits $inhibit, bits $min;
+    $method = 'BICS';
+  }elsif($cmd eq 'startChargeThreshold' and @_ == 2){
+    my $bat = shift;
+    my $percent = shift;
+    $bits = startChargeThreshold bits $bat, bits $percent;
+    $method = 'BCCS';
+  }elsif($cmd eq 'stopChargeThreshold' and @_ == 2){
+    my $bat = shift;
+    my $percent = shift;
+    $bits = stopChargeThreshold bits $bat, bits $percent;
+    $method = 'BCSS';
+  }elsif($cmd eq 'forceDischarge' and (@_ == 2 or @_ == 3)){
+    my $bat = shift;
+    my $discharge = shift;
+    my $acBreak = shift() || 0;
+    $bits = forceDischarge bits $bat, bits $discharge, bits $acBreak;
+    $method = 'BDSS';
+  }else{
+    die "Usage: $0
+      peakShiftState <inhibit> <min>
+      inhibitCharge <bat> <inhibit> [<min>]
+      startChargeThreshold <bat> <percent>
+      stopChargeThreshold <bat> <percent>
+      forceDischarge <bat> <discharge> [<acbreak>]
+        min: 1-1440 minutes, or 0 for never, or 65535 for forever
+        bat: 1 for main, 2 for secondary, 0 for either
+        inhibit: 1 for inhibit, 0 for dont inhibit
+        percent: 0 for default, 1-99 for percentage
+        discharge: 1 for force discharge, 0 for stop discharge
+        acbreak: 1 for break by AC detaching, 0 for do not
+        [] means optional, defaults to 0
+      \n";
+  }
+  my $hex = binToHex $bits;
+  acpiCall "$aslBase.$method 0x$hex";
+}
+
+
+sub peakShiftState($$){
+  my ($inhibit, $min) = @_;
+  return reverse ''
+    . revpadzero( 1, $inhibit)
+    . revpadzero( 3, 0)
+    . revpadzero( 4, 0)
+    . revpadzero(16, $min)
+    . revpadzero( 8, 0)
+  ;
+}
+
+sub inhibitCharge($$$){
+  my ($bat, $inhibit, $min) = @_;
+  return reverse ''
+    . revpadzero( 1, $inhibit)
+    . revpadzero( 3, 0)
+    . revpadzero( 2, $bat)
+    . revpadzero( 2, 0)
+    . revpadzero(16, $min)
+    . revpadzero( 8, 0)
+  ;
+}
+
+sub startChargeThreshold($$){
+  my ($bat, $percent) = @_;
+  return reverse ''
+    . revpadzero( 8, $percent)
+    . revpadzero( 2, $bat)
+    . revpadzero(22, 0)
+  ;
+}
+
+sub stopChargeThreshold($$){
+  my ($bat, $percent) = @_;
+  return reverse ''
+    . revpadzero( 8, $percent)
+    . revpadzero( 2, $bat)
+    . revpadzero(22, 0)
+  ;
+}
+
+sub forceDischarge($$$){
+  my ($bat, $discharge, $acBreak) = @_;
+  return reverse ''
+    . revpadzero( 1, $discharge)
+    . revpadzero( 1, $acBreak)
+    . revpadzero( 6, 0)
+    . revpadzero( 2, $bat)
+    . revpadzero(22, 0)
+  ;
+}
+
+sub acpiCall($){
+  my $call = shift;
+
+  if(not -e $acpiCallDev){
+    die "Could not find $acpiCallDev. Is module acpi_call loaded?\n";
+  }
+
+  print "Calling : ";
+  open FH, "| tee $acpiCallDev";
+  print FH "$call\n";
+  close FH;
+  print "Response: ";
+  system "cat $acpiCallDev";
+  print "\n";
+}
+
+sub binToHex($){
+  my $bits = shift;
+  my @digs = qw(
+    0 1 2 3 4 5 6 7 8 9
+    a b c d e f g h i j
+    k l m n o p q r s t
+    u v w x y z);
+
+  my $radix = 16;
+
+  my $dec = 0;
+  my $pow = 1;
+  for my $bit(reverse split //, $bits){
+    $dec += $pow * $bit;
+    $pow *= 2;
+  }
+
+  my $out = $dec == 0 ? '0' : '';
+
+  while($dec > 0){
+    $out = $digs[$dec % $radix] . $out;
+    $dec = int($dec / $radix);
+  }
+  return $out;
+}
+
+sub bits($){
+  my $dec = shift;
+  die "not a positive integer: " . $dec if $dec !~ /^\d+$/;
+  my $bits = unpack("B32", pack("N", $dec));
+  $bits =~ s/^0*//;
+  return $bits;
+}
+
+sub revpadzero($$){
+  return reverse ('0' x ($_[0] - length $_[1]) . $_[1]);
+}
+
+&main(@ARGV);
