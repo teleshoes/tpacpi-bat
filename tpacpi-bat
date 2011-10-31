@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#########################################################################
+##########################################################################
 # Thinkpad ACPI Battery Control
 # Copyright 2011 Elliot Wolk
 ##########################################################################
@@ -15,20 +15,22 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#########################################################################
-#
+##########################################################################
 # Exposes inhibitCharge, start/stop charge threshold, and force discharge
 # through ACPI as an alternative to SMAPI, which is broken in W520, etc.
 #
 # Makes ACPI calls using the acpi_call kernel module, which is REQUIRED.
 #
 # Supports 2011-released thinkpads, and possibly later ones.
-# Tested and works on: W520, T420
-# Tested and does NOT work on: T400
+# Tested and works on: W520, T420, X220
+# Tested and does NOT work on: T400, X201S
 #
 # Limitations/Known Issues:
 # 1) you cant force discharge on battery, so balancing is still impossible
 # 2) sometimes you cant convince a slice battery to charge before the main
+#    ANYONE who figures out this second issue gets a cookie!
+#    if my main is above 80, and my slice is at 80, my main charges.
+#    i can inhibit the main, but i CANNOT trick the slice into charging
 ##########################################################################
 use strict;
 use warnings;
