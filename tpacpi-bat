@@ -31,6 +31,8 @@
 #    ANYONE who figures out this second issue gets a cookie!
 #    if my main is above 80, and my slice is at 80, my main charges.
 #    i can inhibit the main, but i CANNOT trick the slice into charging
+# 3) you can only inhibit for 720 minutes instead of 1440 minutes
+#    this seems like a BIOS error
 ##########################################################################
 use strict;
 use warnings;
@@ -67,13 +69,16 @@ my $usage = "Usage:
     $name [-v] stopChargeThreshold <bat> <percent>
     $name [-v] forceDischarge <bat> <discharge> [<acbreak>]
 
-  <min>       1-1440 minutes, or 0 for never, or 65535 for forever
+  <min>       1-720 minutes, or 0 for never, or 65535 for forever *
   <bat>       1 for main, 2 for secondary, 0 for either/both
   <inhibit>   1 for inhibit, 0 for dont inhibit
   <percent>   0 for default, 1-99 for percentage
   <discharge> 1 for force discharge, 0 for stop discharge
   <acbreak>   1 for break by AC detaching, 0 for do not
   [] means optional: defaults to 0
+  
+  *likely bug in BIOS code
+   looking at peak-shift-state its obviously supposed to be 1440 min
 ";
 
 
@@ -89,6 +94,12 @@ sub main(@){
     acpiCallSet 'PSSS', writePeakShiftState($inhibit, $min);
   }elsif($cmd eq 'inhibitCharge' and (@args == 2 or @args == 3)){
     my ($bat, $inhibit, $min) = (@args, 0);
+    ############################################################
+    #they are shifting a bit somewhere; the limit should be 1440
+    #the same range in peakShiftState is used, except shifted to the left
+    #the value returned by peakShiftState is the REAL duration, though
+    $min .= '0';
+    ############################################################
     acpiCallSet 'BICS', writeInhibitCharge($bat, $inhibit, $min);
   }elsif($cmd eq 'startChargeThreshold' and @args == 2){
     my ($bat, $percent) = @args;
