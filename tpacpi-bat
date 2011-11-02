@@ -34,74 +34,78 @@
 ##########################################################################
 use strict;
 use warnings;
+use File::Basename;
 
 my $acpiCallDev = '/proc/acpi/call';
 my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
 
-sub peakShiftState($$);
-sub inhibitCharge($$$);
-sub startChargeThreshold($$);
-sub stopChargeThreshold($$);
-sub forceDischarge($$$);
+sub readPeakShiftState($$);
+sub readInhibitCharge($$$);
+sub readStartChargeThreshold($$);
+sub readStopChargeThreshold($$);
+sub readForceDischarge($$$);
 
-sub acpiCall($);
+sub writePeakShiftState($$);
+sub writeInhibitCharge($$$);
+sub writeStartChargeThreshold($$);
+sub writeStopChargeThreshold($$);
+sub writeForceDischarge($$$);
+
+sub acpiCallSet($$);
 sub binToHex($);
 sub bits($);
 sub revpadzero($$);
 
+our $verbose = 0;
+
+my $name = File::Basename::basename $0;
+my $usage = "Usage:
+  Set inhibit charge / force discharge / thresholds:
+    $name [-v] peakShiftState <inhibit> <min>
+    $name [-v] inhibitCharge <bat> <inhibit> [<min>]
+    $name [-v] startChargeThreshold <bat> <percent>
+    $name [-v] stopChargeThreshold <bat> <percent>
+    $name [-v] forceDischarge <bat> <discharge> [<acbreak>]
+
+  <min>       1-1440 minutes, or 0 for never, or 65535 for forever
+  <bat>       1 for main, 2 for secondary, 0 for either/both
+  <inhibit>   1 for inhibit, 0 for dont inhibit
+  <percent>   0 for default, 1-99 for percentage
+  <discharge> 1 for force discharge, 0 for stop discharge
+  <acbreak>   1 for break by AC detaching, 0 for do not
+  [] means optional: defaults to 0
+";
+
+
 sub main(@){
-  my $cmd = shift() || '';
-  my $bits;
-  my $method;
-  if($cmd eq 'peakShiftState' and @_ == 2){
-    my $inhibit = shift;
-    my $min = shift;
-    $bits = peakShiftState bits $inhibit, bits $min;
-    $method = 'PSSS';
-  }elsif($cmd eq 'inhibitCharge' and (@_ == 2 or @_ == 3)){
-    my $bat = shift;
-    my $inhibit = shift;
-    my $min = shift() || 0;
-    $bits = inhibitCharge bits $bat, bits $inhibit, bits $min;
-    $method = 'BICS';
-  }elsif($cmd eq 'startChargeThreshold' and @_ == 2){
-    my $bat = shift;
-    my $percent = shift;
-    $bits = startChargeThreshold bits $bat, bits $percent;
-    $method = 'BCCS';
-  }elsif($cmd eq 'stopChargeThreshold' and @_ == 2){
-    my $bat = shift;
-    my $percent = shift;
-    $bits = stopChargeThreshold bits $bat, bits $percent;
-    $method = 'BCSS';
-  }elsif($cmd eq 'forceDischarge' and (@_ == 2 or @_ == 3)){
-    my $bat = shift;
-    my $discharge = shift;
-    my $acBreak = shift() || 0;
-    $bits = forceDischarge bits $bat, bits $discharge, bits $acBreak;
-    $method = 'BDSS';
-  }else{
-    die "Usage: $0
-      peakShiftState <inhibit> <min>
-      inhibitCharge <bat> <inhibit> [<min>]
-      startChargeThreshold <bat> <percent>
-      stopChargeThreshold <bat> <percent>
-      forceDischarge <bat> <discharge> [<acbreak>]
-        min: 1-1440 minutes, or 0 for never, or 65535 for forever
-        bat: 1 for main, 2 for secondary, 0 for either
-        inhibit: 1 for inhibit, 0 for dont inhibit
-        percent: 0 for default, 1-99 for percentage
-        discharge: 1 for force discharge, 0 for stop discharge
-        acbreak: 1 for break by AC detaching, 0 for do not
-        [] means optional, defaults to 0
-      \n";
+  if($_[0] eq '-v'){
+    $verbose = 1;
+    shift;
   }
-  my $hex = binToHex $bits;
-  acpiCall "$aslBase.$method 0x$hex";
+  my $cmd = shift() || '';
+  my @args = map {bits $_} @_;
+  if($cmd eq 'peakShiftState' and @args == 2){
+    my ($inhibit, $min) = @args;
+    acpiCallSet 'PSSS', writePeakShiftState($inhibit, $min);
+  }elsif($cmd eq 'inhibitCharge' and (@args == 2 or @args == 3)){
+    my ($bat, $inhibit, $min) = (@args, 0);
+    acpiCallSet 'BICS', writeInhibitCharge($bat, $inhibit, $min);
+  }elsif($cmd eq 'startChargeThreshold' and @args == 2){
+    my ($bat, $percent) = @args;
+    acpiCallSet 'BCCS', writeStartChargeThreshold($bat, $percent);
+  }elsif($cmd eq 'stopChargeThreshold' and @args == 2){
+    my ($bat, $percent) = @args;
+    acpiCallSet 'BCSS', writeStopChargeThreshold($bat, $percent);
+  }elsif($cmd eq 'forceDischarge' and (@args == 2 or @args == 3)){
+    my ($bat, $discharge, $acBreak) = (@args, 0);
+    acpiCallSet 'BDSS', writeForceDischarge($bat, $discharge, $acBreak);
+  }else{
+    die $usage;
+  }
 }
 
 
-sub peakShiftState($$){
+sub writePeakShiftState($$){
   my ($inhibit, $min) = @_;
   return reverse ''
     . revpadzero( 1, $inhibit)
@@ -112,7 +116,7 @@ sub peakShiftState($$){
   ;
 }
 
-sub inhibitCharge($$$){
+sub writeInhibitCharge($$$){
   my ($bat, $inhibit, $min) = @_;
   return reverse ''
     . revpadzero( 1, $inhibit)
@@ -124,7 +128,7 @@ sub inhibitCharge($$$){
   ;
 }
 
-sub startChargeThreshold($$){
+sub writeStartChargeThreshold($$){
   my ($bat, $percent) = @_;
   return reverse ''
     . revpadzero( 8, $percent)
@@ -133,7 +137,7 @@ sub startChargeThreshold($$){
   ;
 }
 
-sub stopChargeThreshold($$){
+sub writeStopChargeThreshold($$){
   my ($bat, $percent) = @_;
   return reverse ''
     . revpadzero( 8, $percent)
@@ -142,7 +146,7 @@ sub stopChargeThreshold($$){
   ;
 }
 
-sub forceDischarge($$$){
+sub writeForceDischarge($$$){
   my ($bat, $discharge, $acBreak) = @_;
   return reverse ''
     . revpadzero( 1, $discharge)
@@ -153,6 +157,7 @@ sub forceDischarge($$$){
   ;
 }
 
+
 sub acpiCall($){
   my $call = shift;
 
@@ -160,14 +165,25 @@ sub acpiCall($){
     die "Could not find $acpiCallDev. Is module acpi_call loaded?\n";
   }
 
-  print "Calling : ";
-  open FH, "| tee $acpiCallDev";
+  open FH, "> $acpiCallDev" or die "Cannot write to $acpiCallDev: $!";
   print FH "$call\n";
   close FH;
-  print "Response: ";
-  system "cat $acpiCallDev";
-  print "\n";
+  open FH, "< $acpiCallDev" or die "Cannot read $acpiCallDev: $!";
+  my $val = <FH>;
+  close FH;
+  return $val;
 }
+sub acpiCallSet($$){
+  my ($method, $bits) = @_;
+  my $call = "$aslBase.$method 0x". binToHex($bits);
+  print "Call    : $call\n" if $verbose;
+  my $val = acpiCall $call;
+  print "Response: $val\n" if $verbose;
+  if($val ne '0x0'){
+    die "Call failure status returned: $val";
+  }
+}
+
 
 sub binToHex($){
   my $bits = shift;
@@ -197,7 +213,7 @@ sub binToHex($){
 
 sub bits($){
   my $dec = shift;
-  die "not a positive integer: " . $dec if $dec !~ /^\d+$/;
+  die "not a positive integer: " . $dec . "\n\n$usage" if $dec !~ /^\d+$/;
   my $bits = unpack("B32", pack("N", $dec));
   $bits =~ s/^0*//;
   return $bits;
