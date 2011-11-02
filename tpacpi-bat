@@ -41,11 +41,11 @@ use File::Basename;
 my $acpiCallDev = '/proc/acpi/call';
 my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
 
-sub readPeakShiftState($$);
-sub readInhibitCharge($$$);
-sub readStartChargeThreshold($$);
-sub readStopChargeThreshold($$);
-sub readForceDischarge($$$);
+sub readPeakShiftState($);
+sub readInhibitCharge($);
+sub readStartChargeThreshold($);
+sub readStopChargeThreshold($);
+sub readForceDischarge($);
 
 sub writePeakShiftState($$);
 sub writeInhibitCharge($$$);
@@ -53,10 +53,18 @@ sub writeStartChargeThreshold($$);
 sub writeStopChargeThreshold($$);
 sub writeForceDischarge($$$);
 
+sub acpiCallGet($$);
 sub acpiCallSet($$);
-sub binToHex($);
-sub bits($);
+
 sub revpadzero($$);
+
+sub bitRangeToDec(\@$$);
+sub parseArgDecToBin($);
+sub parseStatusHexToBitArray($);
+sub decToBin($);
+sub binToDec($);
+sub hexToBin($);
+sub binToHex($);
 
 our $verbose = 0;
 
@@ -69,6 +77,13 @@ my $usage = "Usage:
     $name [-v] stopChargeThreshold <bat> <percent>
     $name [-v] forceDischarge <bat> <discharge> [<acbreak>]
 
+  Read inhibit charge / force discharge / thresholds:
+    $name [-v] inhibitCharge <bat>
+    $name [-v] startChargeThreshold <bat>
+    $name [-v] stopChargeThreshold <bat>
+    $name [-v] forceDischarge <bat>
+
+  -v          show ASL call and response
   <min>       1-720 minutes, or 0 for never, or 65535 for forever *
   <bat>       1 for main, 2 for secondary, 0 for either/both
   <inhibit>   1 for inhibit, 0 for dont inhibit
@@ -88,8 +103,24 @@ sub main(@){
     shift;
   }
   my $cmd = shift() || '';
-  my @args = map {bits $_} @_;
-  if($cmd eq 'peakShiftState' and @args == 2){
+  my @args = map {parseArgDecToBin $_} @_;
+  
+  #GETTERS
+  if($cmd eq 'inhibitCharge' and @args == 1){
+    my ($bat) = @args;
+    #this is actually reading peak shift state
+    print readInhibitCharge(acpiCallGet 'PSSG', $bat) . "\n";
+  }elsif($cmd eq 'startChargeThreshold' and @args == 1){
+    my ($bat) = @args;
+    print readStartChargeThreshold(acpiCallGet 'BCTG', $bat) . "\n";
+  }elsif($cmd eq 'stopChargeThreshold' and @args == 1){
+    my ($bat) = @args;
+    print readStopChargeThreshold(acpiCallGet 'BCSG', $bat) . "\n";
+  }elsif($cmd eq 'forceDischarge' and @args == 1){
+    my ($bat) = @args;
+    print readForceDischarge(acpiCallGet 'BDSG', $bat) . "\n";
+  #SETTERS
+  }elsif($cmd eq 'peakShiftState' and @args == 2){
     my ($inhibit, $min) = @args;
     acpiCallSet 'PSSS', writePeakShiftState($inhibit, $min);
   }elsif($cmd eq 'inhibitCharge' and (@args == 2 or @args == 3)){
@@ -114,6 +145,64 @@ sub main(@){
     die $usage;
   }
 }
+
+sub readInhibitCharge($){
+  my @bits = parseStatusHexToBitArray $_[0];
+  if($bits[5] != 1){
+    die "<inhibit charge unsupported>\n";
+  }
+  my $val;
+  if($bits[0] == 1){
+    $val = "yes";
+    my $min = bitRangeToDec @bits, 8, 23;
+    if($min == 0){
+      $val .= " (unspecified min)";
+    }elsif($min == 65535){
+      $val .= " (forever)";
+    }else{
+      $val .= " ($min min)";
+    }
+  }else{
+    $val = "no";
+  }
+
+  return $val;
+}
+sub readStartChargeThreshold($){
+  my @bits = parseStatusHexToBitArray $_[0];
+  if($bits[8] != 1 and $bits[9] != 1){
+    die "<start charge threshold unsupported>\n";
+  }
+  return bitRangeToDec @bits, 0, 7;
+}
+
+sub readStopChargeThreshold($){
+  my @bits = parseStatusHexToBitArray $_[0];
+  if($bits[8] != 1 and $bits[9] != 1){
+    die "<start charge threshold unsupported>\n";
+  }
+  return bitRangeToDec @bits, 0, 7;
+}
+
+sub readForceDischarge($){
+  my @bits = parseStatusHexToBitArray $_[0];
+  if($bits[8] != 1 and $bits[9] != 1){
+    die "<force discharge unsupported>\n";
+  }
+  my $val;
+  if($bits[0] == 1){
+    $val = 'yes';
+  }else{
+    $val = 'no';
+  }
+  if($bits[1] == 1){
+    $val .= ' (break on AC detach)';
+  }
+
+  return $val;
+}
+
+
 
 
 sub writePeakShiftState($$){
@@ -184,54 +273,65 @@ sub acpiCall($){
   close FH;
   return $val;
 }
-sub acpiCallSet($$){
+sub acpiCallGet($$){
   my ($method, $bits) = @_;
-  my $call = "$aslBase.$method 0x". binToHex($bits);
+  my $call = "$aslBase.$method 0x" . binToHex($bits);
   print "Call    : $call\n" if $verbose;
   my $val = acpiCall $call;
   print "Response: $val\n" if $verbose;
-  if($val ne '0x0'){
+  if($val eq '0x80000000'){
+    die "Call failure status returned: $val";
+  }
+  return $val;
+}
+sub acpiCallSet($$){
+  my ($method, $bits) = @_;
+  my $call = "$aslBase.$method 0x" . binToHex($bits);
+  print "Call    : $call\n" if $verbose;
+  my $val = acpiCall $call;
+  print "Response: $val\n" if $verbose;
+  if($val eq '0x80000000'){
     die "Call failure status returned: $val";
   }
 }
 
-
-sub binToHex($){
-  my $bits = shift;
-  my @digs = qw(
-    0 1 2 3 4 5 6 7 8 9
-    a b c d e f g h i j
-    k l m n o p q r s t
-    u v w x y z);
-
-  my $radix = 16;
-
-  my $dec = 0;
-  my $pow = 1;
-  for my $bit(reverse split //, $bits){
-    $dec += $pow * $bit;
-    $pow *= 2;
-  }
-
-  my $out = $dec == 0 ? '0' : '';
-
-  while($dec > 0){
-    $out = $digs[$dec % $radix] . $out;
-    $dec = int($dec / $radix);
-  }
-  return $out;
+sub revpadzero($$){
+  return reverse ('0' x ($_[0] - length $_[1]) . $_[1]);
 }
 
-sub bits($){
+sub bitRangeToDec(\@$$){
+  my @bits = @{shift()};
+  my $start = shift;
+  my $end = shift;
+  my $bin = reverse(join '', @bits[$start .. $end]);
+  return binToDec $bin;
+}
+sub parseArgDecToBin($){
   my $dec = shift;
   die "not a positive integer: " . $dec . "\n\n$usage" if $dec !~ /^\d+$/;
-  my $bits = unpack("B32", pack("N", $dec));
+  return decToBin $dec;
+}
+sub parseStatusHexToBitArray($){
+  my $hex = shift;
+  if($hex !~ /0x([0-9a-f]+)/i){
+    die "Bad status returned: $hex\n";
+  }
+  return split //, revpadzero 32, hexToBin($1);
+}
+
+sub decToBin($){
+  my $bits = unpack("B32", pack("N", $_[0]));
   $bits =~ s/^0*//;
   return $bits;
 }
-
-sub revpadzero($$){
-  return reverse ('0' x ($_[0] - length $_[1]) . $_[1]);
+sub binToDec($){
+  return oct "0b$_[0]";
+}
+sub hexToBin($){
+  return decToBin(oct "0x$_[0]");
+}
+sub binToHex($){
+  return sprintf("%x", binToDec $_[0]);
 }
 
 &main(@ARGV);
