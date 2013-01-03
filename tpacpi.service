@@ -1,0 +1,10 @@
+[Unit]
+Description=sets battery thresholds
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/perl /usr/lib/perl5/vendor_perl/tpacpi-bat startChargeThreshold 0 40
+ExecStart=/usr/bin/perl /usr/lib/perl5/vendor_perl/tpacpi-bat stopChargeThreshold 0 80
+
+[Install]
+WantedBy=multi-user.target
