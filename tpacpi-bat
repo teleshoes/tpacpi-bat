@@ -72,7 +72,7 @@ my $name = File::Basename::basename $0;
 my $usage = "Usage:
   Set inhibit charge / force discharge / thresholds:
     $name [-v] peakShiftState <inhibit> <min>
-    $name [-v] inhibitCharge <bat> <inhibit> [<min>]
+    $name [-v] inhibitCharge <bat> <inhibit> <min-bug>
     $name [-v] startChargeThreshold <bat> <percent>
     $name [-v] stopChargeThreshold <bat> <percent>
     $name [-v] forceDischarge <bat> <discharge> [<acbreak>]
@@ -84,7 +84,8 @@ my $usage = "Usage:
     $name [-v] forceDischarge <bat>
 
   -v          show ASL call and response
-  <min>       1-720 minutes, or 0 for never, or 65535 for forever *
+  <min>       1-1440 minutes, or 0 for never, or 65535 for forever
+  <min-bug>   1-720 minutes, or 0 for never, or 65535 for forever *
   <bat>       1 for main, 2 for secondary, 0 for either/both
   <inhibit>   1 for inhibit, 0 for dont inhibit
   <percent>   0 for default, 1-99 for percentage
