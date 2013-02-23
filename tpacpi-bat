@@ -262,6 +262,9 @@ sub acpiCall($){
   my $call = shift;
 
   if(not -e $acpiCallDev){
+    system "insmod /lib/modules/\$(uname -r)/extra/acpi_call.ko";
+  }
+  if(not -e $acpiCallDev){
     die "Could not find $acpiCallDev. Is module acpi_call loaded?\n";
   }
 
