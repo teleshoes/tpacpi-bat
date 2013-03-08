@@ -70,31 +70,38 @@ our $verbose = 0;
 
 my $name = File::Basename::basename $0;
 my $usage = "Usage:
-  Set inhibit charge / force discharge / thresholds:
-    $name [-v] peakShiftState <inhibit> <min>
-    $name [-v] inhibitCharge <bat> <inhibit> <min-bug>
-    $name [-v] startChargeThreshold <bat> <percent>
-    $name [-v] stopChargeThreshold <bat> <percent>
-    $name [-v] forceDischarge <bat> <discharge> [<acbreak>]
+  Show this message:
+    $name [-h|--help]
 
-  Read inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge <bat>
-    $name [-v] startChargeThreshold <bat>
-    $name [-v] stopChargeThreshold <bat>
-    $name [-v] forceDischarge <bat>
+  Get inhibit charge / force discharge / thresholds:
+    $name [-v] inhibitCharge        <bat-0-1-2>
+    $name [-v] startChargeThreshold <bat-1-2>
+    $name [-v] stopChargeThreshold  <bat-1-2>
+    $name [-v] forceDischarge       <bat-1-2>
+
+  Set inhibit charge / force discharge / thresholds:
+    $name [-v] inhibitCharge        <bat-0-1-2> <inhibit> [<min-720>]
+    $name [-v] startChargeThreshold <bat-0-1-2> <percent>
+    $name [-v] stopChargeThreshold  <bat-0-1-2> <percent>
+    $name [-v] forceDischarge       <bat-1-2> <discharge> [<acbreak>]
+
+  Set peakShiftState, which is mysterious and inhibits charge
+    $name [-v] peakShiftState       <inhibit> [<min-1440>]
 
   -v          show ASL call and response
-  <min>       1-1440 minutes, or 0 for never, or 65535 for forever
-  <min-bug>   1-720 minutes, or 0 for never, or 65535 for forever *
-  <bat>       1 for main, 2 for secondary, 0 for either/both
-  <inhibit>   1 for inhibit, 0 for dont inhibit
+  <bat-1-2>   1 for main, 2 for secondary
+  <bat-0-1-2> 1 for main, 2 for secondary, 0 for either/both
+  <min-1440>  1-1440 minutes, or 0 for never, or 65535 for forever
+  <min-720>   1-720 minutes, or 0 for never, or 65535 for forever *
   <percent>   0 for default, 1-99 for percentage
+  <inhibit>   1 for inhibit, 0 for dont inhibit
   <discharge> 1 for force discharge, 0 for stop discharge
   <acbreak>   1 for break by AC detaching, 0 for do not
   [] means optional: defaults to 0
   
   *likely bug in BIOS code
-   looking at peak-shift-state its obviously supposed to be 1440 min
+   in the docs, inhibitCharge and peakShiftState both indicate the same number
+   of bits for minutes, but inhibit shifts the bits left
 ";
 
 
