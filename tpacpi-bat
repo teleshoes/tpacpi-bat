@@ -74,15 +74,15 @@ my $usage = "Usage:
     $name [-h|--help]
 
   Get inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        -g <bat{1,2,0}>
     $name [-v] startChargeThreshold -g <bat{1,2}>
     $name [-v] stopChargeThreshold  -g <bat{1,2}>
+    $name [-v] inhibitCharge        -g <bat{1,2,0}>
     $name [-v] forceDischarge       -g <bat{1,2}>
 
   Set inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
     $name [-v] startChargeThreshold -s <bat{1,2,0}> <percent{0,1-99}>
     $name [-v] stopChargeThreshold  -s <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] inhibitCharge        -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
     $name [-v] forceDischarge       -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
   Set peakShiftState, which is mysterious and inhibits charge
@@ -103,8 +103,9 @@ my $usage = "Usage:
 ";
 
 my $methods = join "|", qw(
-  peakShiftState inhibitCharge
-  startChargeThreshold stopChargeThreshold forceDischarge
+  startChargeThreshold stopChargeThreshold
+  inhibitCharge forceDischarge
+  peakShiftState
 );
 my $noReadMethods = join "|", qw(peakShiftState);
 my $noBothReadMethods = join "|", qw(
@@ -154,13 +155,13 @@ sub getMethod($$){
 
   $bat = parseArgDecToBin $bat;
 
-  if($method eq 'inhibitCharge'){
-    #this is actually reading peak shift state
-    return readInhibitCharge(acpiCallGet 'PSSG', $bat);
-  }elsif($method eq 'startChargeThreshold'){
+  if($method eq 'startChargeThreshold'){
     return readStartChargeThreshold(acpiCallGet 'BCTG', $bat);
   }elsif($method eq 'stopChargeThreshold'){
     return readStopChargeThreshold(acpiCallGet 'BCSG', $bat);
+  }elsif($method eq 'inhibitCharge'){
+    #this is actually reading peak shift state
+    return readInhibitCharge(acpiCallGet 'PSSG', $bat);
   }elsif($method eq 'forceDischarge'){
     return readForceDischarge(acpiCallGet 'BDSG', $bat);
   }else{
@@ -217,16 +218,16 @@ sub setMethod($$@){
 
   %info = map {$_ => parseArgDecToBin $info{$_}} keys %info;
 
-  if($method eq 'peakShiftState'){
-    acpiCallSet 'PSSS', writePeakShiftState(\%info);
-  }elsif($method eq 'inhibitCharge'){
-    acpiCallSet 'BICS', writeInhibitCharge(\%info);
-  }elsif($method eq 'startChargeThreshold'){
+  if($method eq 'startChargeThreshold'){
     acpiCallSet 'BCCS', writeStartChargeThreshold(\%info);
   }elsif($method eq 'stopChargeThreshold'){
     acpiCallSet 'BCSS', writeStopChargeThreshold(\%info);
+  }elsif($method eq 'inhibitCharge'){
+    acpiCallSet 'BICS', writeInhibitCharge(\%info);
   }elsif($method eq 'forceDischarge'){
     acpiCallSet 'BDSS', writeForceDischarge(\%info);
+  }elsif($method eq 'peakShiftState'){
+    acpiCallSet 'PSSS', writePeakShiftState(\%info);
   }else{
     die $usage;
   }
