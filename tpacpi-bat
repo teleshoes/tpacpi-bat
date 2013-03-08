@@ -65,13 +65,20 @@ sub decToBin($);
 sub binToDec($);
 sub hexToBin($);
 sub binToHex($);
+sub synList(@);
 
 our $verbose = 0;
 
 my ($methodST, $methodSP, $methodIC, $methodFD, $methodPS) =
-  ("startChargeThreshold", "stopChargeThreshold",
-   "inhibitCharge", "forceDischarge",
-   "peakShiftState");
+  ("ST", "SP", "IC", "FD", "PS");
+my $methodSyns = {
+  $methodST => synList ("st", "startThreshold", "start"),
+  $methodSP => synList ("sp", "stopThreshold", "stop"),
+  $methodIC => synList ("ic", "inhibitCharge", "inhibit"),
+  $methodFD => synList ("fd", "forceDischarge"),
+  $methodPS => synList ("ps", "peakShiftState"),
+};
+
 my $name = File::Basename::basename $0;
 my $usage = "Usage:
   Show this message:
@@ -92,6 +99,12 @@ my $usage = "Usage:
   Set peak shift state, which is mysterious and inhibits charge
     $name [-v] $methodPS -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
 
+  Synonyms:
+    $methodST -> $$methodSyns{$methodST}
+    $methodSP -> $$methodSyns{$methodSP}
+    $methodIC -> $$methodSyns{$methodIC}
+    $methodFD -> $$methodSyns{$methodFD}
+    $methodPS -> $$methodSyns{$methodPS}
 
     -v           show ASL call and response
     <bat>        1 for main, 2 for secondary, 0 for either/both
@@ -107,7 +120,6 @@ my $usage = "Usage:
      number of bits for minutes, but inhibit shifts the bits left
 ";
 
-my $methods = join "|", ($methodST, $methodSP, $methodIC $methodFD, $methodPS);
 my $noReadMethods = join "|", ($methodPS);
 my $noBothReadMethods = join "|", ($methodST, $methodSP, $methodFD);
 my $noBothWriteMethods = join "|", ($methodFD);
@@ -122,8 +134,12 @@ sub main(@){
     shift;
   }
   my $cmd = shift() || '';
-  my $method = shift() || '';
-  die $usage if $method !~ /^($methods)$/ or $cmd !~ /^(-g|-s)$/;
+  my $method;
+  my $methodSyn = shift() || '';
+  for my $m(keys %$methodSyns){
+    $method = $m if $methodSyn eq $m or $methodSyn =~ /^($$methodSyns{$m})$/;
+  }
+  die $usage if not defined $method or $cmd !~ /^(-g|-s)$/;
 
 
   my $bat;
@@ -437,4 +453,7 @@ sub binToHex($){
   return sprintf("%x", binToDec $_[0]);
 }
 
+sub synList(@){
+  return join "|", ((map {"--$_"} @_), @_);
+}
 &main(@ARGV);
