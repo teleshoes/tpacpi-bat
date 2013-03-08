@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##########################################################################
-# Exposes inhibitCharge, start/stop charge threshold, and force discharge
+# Exposes inhibit charge, start/stop charge threshold, and force discharge
 # through ACPI as an alternative to SMAPI, which is broken in W520, etc.
 #
 # Makes ACPI calls using the acpi_call kernel module, which is REQUIRED.
@@ -84,8 +84,8 @@ my $usage = "Usage:
     $name [-v] stopChargeThreshold  -s <bat{1,2,0}> <percent{0,1-99}>
     $name [-v] inhibitCharge        -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
     $name [-v] forceDischarge       -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
+  Set peak shift state, which is mysterious and inhibits charge
 
-  Set peakShiftState, which is mysterious and inhibits charge
     $name [-v] peakShiftState       -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
 
   -v           show ASL call and response
@@ -98,8 +98,8 @@ my $usage = "Usage:
   [] means optional: sets value to 0
   
   *likely bug in BIOS code
-   in the docs, inhibitCharge and peakShiftState both indicate the same number
-   of bits for minutes, but inhibit shifts the bits left
+   in the docs, inhibit-charge and peak-shift-state both indicate the same
+   number of bits for minutes, but inhibit shifts the bits left
 ";
 
 my $methods = join "|", qw(
@@ -189,8 +189,8 @@ sub setMethod($$@){
     $info{min} = 0 if not defined $info{min};
     ############################################################
     #they are shifting a bit somewhere; the limit should be 1440
-    #the same range in peakShiftState is used, except shifted to the left
-    #the value returned by peakShiftState is the REAL duration, though
+    #the same range in peak-shift-state is used, except shifted to the left
+    #the value returned by peak-shift-state is the REAL duration, though
     $info{min} *= 2 if $method eq 'inhibitCharge';
     ############################################################
 
