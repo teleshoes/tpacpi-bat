@@ -13,13 +13,13 @@ Usage:
   Show this message:
     tpacpi-bat [-h|--help]
 
-  Get inhibit charge / force discharge / thresholds:
+  Get charge thresholds / inhibit charge / force discharge:
     tpacpi-bat [-v] ST -g <bat{1,2}>
     tpacpi-bat [-v] SP -g <bat{1,2}>
     tpacpi-bat [-v] IC -g <bat{1,2,0}>
     tpacpi-bat [-v] FD -g <bat{1,2}>
 
-  Set inhibit charge / force discharge / thresholds:
+  Set charge thresholds / inhibit charge / force discharge:
     tpacpi-bat [-v] ST -s <bat{1,2,0}> <percent{0,1-99}>
     tpacpi-bat [-v] SP -s <bat{1,2,0}> <percent{0,1-99}>
     tpacpi-bat [-v] IC -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]

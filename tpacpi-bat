@@ -84,13 +84,13 @@ my $usage = "Usage:
   Show this message:
     $name [-h|--help]
 
-  Get inhibit charge / force discharge / thresholds:
+  Get charge thresholds / inhibit charge / force discharge:
     $name [-v] $methodST -g <bat{1,2}>
     $name [-v] $methodSP -g <bat{1,2}>
     $name [-v] $methodIC -g <bat{1,2,0}>
     $name [-v] $methodFD -g <bat{1,2}>
 
-  Set inhibit charge / force discharge / thresholds:
+  Set charge thresholds / inhibit charge / force discharge:
     $name [-v] $methodST -s <bat{1,2,0}> <percent{0,1-99}>
     $name [-v] $methodSP -s <bat{1,2,0}> <percent{0,1-99}>
     $name [-v] $methodIC -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
