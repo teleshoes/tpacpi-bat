@@ -215,6 +215,7 @@ sub setMethod($$@){
       die "missing or invalid value for <percent>\n";
     }
   }
+  die $usage if @_ > 0;
 
   %info = map {$_ => parseArgDecToBin $info{$_}} keys %info;
 
