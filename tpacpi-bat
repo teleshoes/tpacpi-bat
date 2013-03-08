@@ -106,6 +106,10 @@ my $usage = "Usage:
 
 
 sub main(@){
+  if(@_ == 1 and $_[0] =~ /^(-h|--help)$/){
+    print $usage;
+    exit 0;
+  }
   if($_[0] eq '-v'){
     $verbose = 1;
     shift;
