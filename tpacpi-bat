@@ -74,30 +74,28 @@ my $usage = "Usage:
     $name [-h|--help]
 
   Get inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        -g <bat-0-1-2>
-    $name [-v] startChargeThreshold -g <bat-1-2>
-    $name [-v] stopChargeThreshold  -g <bat-1-2>
-    $name [-v] forceDischarge       -g <bat-1-2>
+    $name [-v] inhibitCharge        -g <bat{1,2,0}>
+    $name [-v] startChargeThreshold -g <bat{1,2}>
+    $name [-v] stopChargeThreshold  -g <bat{1,2}>
+    $name [-v] forceDischarge       -g <bat{1,2}>
 
   Set inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        -s <bat-0-1-2> <inhibit> [<min-720>]
-    $name [-v] startChargeThreshold -s <bat-0-1-2> <percent>
-    $name [-v] stopChargeThreshold  -s <bat-0-1-2> <percent>
-    $name [-v] forceDischarge       -s <bat-1-2> <discharge> [<acbreak>]
+    $name [-v] inhibitCharge        -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
+    $name [-v] startChargeThreshold -s <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] stopChargeThreshold  -s <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] forceDischarge       -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
   Set peakShiftState, which is mysterious and inhibits charge
-    $name [-v] peakShiftState       -s <inhibit> [<min-1440>]
+    $name [-v] peakShiftState       -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
 
-  -v          show ASL call and response
-  <bat-1-2>   1 for main, 2 for secondary
-  <bat-0-1-2> 1 for main, 2 for secondary, 0 for either/both
-  <min-1440>  1-1440 minutes, or 0 for never, or 65535 for forever
-  <min-720>   1-720 minutes, or 0 for never, or 65535 for forever *
-  <percent>   0 for default, 1-99 for percentage
-  <inhibit>   1 for inhibit, 0 for dont inhibit
-  <discharge> 1 for force discharge, 0 for stop discharge
-  <acbreak>   1 for break by AC detaching, 0 for do not
-  [] means optional: defaults to 0
+  -v           show ASL call and response
+  <bat>        1 for main, 2 for secondary, 0 for either/both
+  <min>        minutes, or 0 for never, or 65535 for forever
+  <percent>    0 for default, 1-99 for percentage
+  <inhibit>    1 for inhibit, 0 for dont inhibit
+  <discharge>  1 for force discharge, 0 for stop forcing discharge
+  <acbreak>    1 for stop forcing when AC is detached, 0 for do not
+  [] means optional: sets value to 0
   
   *likely bug in BIOS code
    in the docs, inhibitCharge and peakShiftState both indicate the same number
