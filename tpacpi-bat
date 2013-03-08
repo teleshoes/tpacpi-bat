@@ -47,11 +47,11 @@ sub readStartChargeThreshold($);
 sub readStopChargeThreshold($);
 sub readForceDischarge($);
 
-sub writePeakShiftState($$);
-sub writeInhibitCharge($$$);
-sub writeStartChargeThreshold($$);
-sub writeStopChargeThreshold($$);
-sub writeForceDischarge($$$);
+sub writePeakShiftState($);
+sub writeInhibitCharge($);
+sub writeStartChargeThreshold($);
+sub writeStopChargeThreshold($);
+sub writeForceDischarge($);
 
 sub acpiCallGet($$);
 sub acpiCallSet($$);
@@ -74,19 +74,19 @@ my $usage = "Usage:
     $name [-h|--help]
 
   Get inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        <bat-0-1-2>
-    $name [-v] startChargeThreshold <bat-1-2>
-    $name [-v] stopChargeThreshold  <bat-1-2>
-    $name [-v] forceDischarge       <bat-1-2>
+    $name [-v] inhibitCharge        -g <bat-0-1-2>
+    $name [-v] startChargeThreshold -g <bat-1-2>
+    $name [-v] stopChargeThreshold  -g <bat-1-2>
+    $name [-v] forceDischarge       -g <bat-1-2>
 
   Set inhibit charge / force discharge / thresholds:
-    $name [-v] inhibitCharge        <bat-0-1-2> <inhibit> [<min-720>]
-    $name [-v] startChargeThreshold <bat-0-1-2> <percent>
-    $name [-v] stopChargeThreshold  <bat-0-1-2> <percent>
-    $name [-v] forceDischarge       <bat-1-2> <discharge> [<acbreak>]
+    $name [-v] inhibitCharge        -s <bat-0-1-2> <inhibit> [<min-720>]
+    $name [-v] startChargeThreshold -s <bat-0-1-2> <percent>
+    $name [-v] stopChargeThreshold  -s <bat-0-1-2> <percent>
+    $name [-v] forceDischarge       -s <bat-1-2> <discharge> [<acbreak>]
 
   Set peakShiftState, which is mysterious and inhibits charge
-    $name [-v] peakShiftState       <inhibit> [<min-1440>]
+    $name [-v] peakShiftState       -s <inhibit> [<min-1440>]
 
   -v          show ASL call and response
   <bat-1-2>   1 for main, 2 for secondary
@@ -104,55 +104,130 @@ my $usage = "Usage:
    of bits for minutes, but inhibit shifts the bits left
 ";
 
+my $methods = join "|", qw(
+  peakShiftState inhibitCharge
+  startChargeThreshold stopChargeThreshold forceDischarge
+);
+my $noReadMethods = join "|", qw(peakShiftState);
+my $noBothReadMethods = join "|", qw(
+  startChargeThreshold stopChargeThreshold forceDischarge
+);
+my $noBothWriteMethods = join "|", qw(forceDischarge);
 
 sub main(@){
   if(@_ == 1 and $_[0] =~ /^(-h|--help)$/){
     print $usage;
     exit 0;
   }
-  if($_[0] eq '-v'){
+  if(@_ > 0 and $_[0] eq '-v'){
     $verbose = 1;
     shift;
   }
   my $cmd = shift() || '';
-  my @args = map {parseArgDecToBin $_} @_;
-  
-  #GETTERS
-  if($cmd eq 'inhibitCharge' and @args == 1){
-    my ($bat) = @args;
+  my $method = shift() || '';
+  die $usage if $method !~ /^($methods)$/ or $cmd !~ /^(-g|-s)$/;
+
+
+  my $bat;
+  if($method eq 'peakShiftState'){
+    $bat = 0;
+  }else{
+    $bat = shift;
+  }
+  die "<bat> missing or incorrect\n" if not defined $bat or $bat !~ /^0|1|2$/;
+
+  if($cmd eq '-g' and @_ == 0){
+    print getMethod($method, $bat) . "\n";
+  }elsif($cmd eq '-s'){
+    print setMethod($method, $bat, @_);
+  }
+}
+
+sub getMethod($$){
+  my $method = shift;
+  my $bat = shift;
+
+  if($method =~ /^($noReadMethods)$/){
+    die "Cannot read $method\n";
+  }
+  if($bat == 0 and $method =~ /^($noBothReadMethods)$/){
+    die "Cannot specify 'either/both' for reading $method\n";
+  }
+
+  $bat = parseArgDecToBin $bat;
+
+  if($method eq 'inhibitCharge'){
     #this is actually reading peak shift state
-    print readInhibitCharge(acpiCallGet 'PSSG', $bat) . "\n";
-  }elsif($cmd eq 'startChargeThreshold' and @args == 1){
-    my ($bat) = @args;
-    print readStartChargeThreshold(acpiCallGet 'BCTG', $bat) . "\n";
-  }elsif($cmd eq 'stopChargeThreshold' and @args == 1){
-    my ($bat) = @args;
-    print readStopChargeThreshold(acpiCallGet 'BCSG', $bat) . "\n";
-  }elsif($cmd eq 'forceDischarge' and @args == 1){
-    my ($bat) = @args;
-    print readForceDischarge(acpiCallGet 'BDSG', $bat) . "\n";
-  #SETTERS
-  }elsif($cmd eq 'peakShiftState' and @args == 2){
-    my ($inhibit, $min) = @args;
-    acpiCallSet 'PSSS', writePeakShiftState($inhibit, $min);
-  }elsif($cmd eq 'inhibitCharge' and (@args == 2 or @args == 3)){
-    my ($bat, $inhibit, $min) = (@args, 0);
+    return readInhibitCharge(acpiCallGet 'PSSG', $bat);
+  }elsif($method eq 'startChargeThreshold'){
+    return readStartChargeThreshold(acpiCallGet 'BCTG', $bat);
+  }elsif($method eq 'stopChargeThreshold'){
+    return readStopChargeThreshold(acpiCallGet 'BCSG', $bat);
+  }elsif($method eq 'forceDischarge'){
+    return readForceDischarge(acpiCallGet 'BDSG', $bat);
+  }else{
+    die $usage;
+  }
+}
+sub setMethod($$@){
+  my $method = shift;
+  my $bat = shift;
+
+  if($bat == 0 and $method =~ /^($noBothWriteMethods)$/){
+    die "Cannot specify 'either/both' for writing $method\n";
+  }
+
+  my %info;
+  $info{bat} = $bat;
+
+  if($method =~ /^(inhibitCharge|peakShiftState)$/){
+    $info{inhibit} = shift @_;
+    if(not defined $info{inhibit} or $info{inhibit} !~ /^0|1$/){
+      die "missing or invalid value for <inhibit>\n";
+    }
+
+    $info{min} = shift @_;
+    $info{min} = 0 if not defined $info{min};
     ############################################################
     #they are shifting a bit somewhere; the limit should be 1440
     #the same range in peakShiftState is used, except shifted to the left
     #the value returned by peakShiftState is the REAL duration, though
-    $min .= '0';
+    $info{min} *= 2 if $method eq 'inhibitCharge';
     ############################################################
-    acpiCallSet 'BICS', writeInhibitCharge($bat, $inhibit, $min);
-  }elsif($cmd eq 'startChargeThreshold' and @args == 2){
-    my ($bat, $percent) = @args;
-    acpiCallSet 'BCCS', writeStartChargeThreshold($bat, $percent);
-  }elsif($cmd eq 'stopChargeThreshold' and @args == 2){
-    my ($bat, $percent) = @args;
-    acpiCallSet 'BCSS', writeStopChargeThreshold($bat, $percent);
-  }elsif($cmd eq 'forceDischarge' and (@args == 2 or @args == 3)){
-    my ($bat, $discharge, $acBreak) = (@args, 0);
-    acpiCallSet 'BDSS', writeForceDischarge($bat, $discharge, $acBreak);
+
+    if($info{min} !~ /^\d+$/ or ($info{min} > 1440 and $info{min} != 65535)){
+      die "invalid value for <min>\n";
+    }
+  }elsif($method =~ /^(forceDischarge)$/){
+    $info{discharge} = shift @_;
+    if(not defined $info{discharge} or $info{discharge} !~ /^0|1$/){
+      die "missing or invalid value for <discharge>\n";
+    }
+
+    $info{acbreak} = shift @_;
+    $info{acbreak} = 0 if not defined $info{acbreak};
+    if($info{acbreak} !~ /^0|1$/){
+      die "invalid value for <acbreak>\n";
+    }
+  }elsif($method =~ /^(startChargeThreshold|stopChargeThreshold)$/){
+    $info{percent} = shift @_;
+    if(not defined $info{percent} or $info{percent} !~ /^\d+$/ or $info{percent} > 99){
+      die "missing or invalid value for <percent>\n";
+    }
+  }
+
+  %info = map {$_ => parseArgDecToBin $info{$_}} keys %info;
+
+  if($method eq 'peakShiftState'){
+    acpiCallSet 'PSSS', writePeakShiftState(\%info);
+  }elsif($method eq 'inhibitCharge'){
+    acpiCallSet 'BICS', writeInhibitCharge(\%info);
+  }elsif($method eq 'startChargeThreshold'){
+    acpiCallSet 'BCCS', writeStartChargeThreshold(\%info);
+  }elsif($method eq 'stopChargeThreshold'){
+    acpiCallSet 'BCSS', writeStopChargeThreshold(\%info);
+  }elsif($method eq 'forceDischarge'){
+    acpiCallSet 'BDSS', writeForceDischarge(\%info);
   }else{
     die $usage;
   }
@@ -231,56 +306,54 @@ sub readForceDischarge($){
 }
 
 
-
-
-sub writePeakShiftState($$){
-  my ($inhibit, $min) = @_;
+sub writePeakShiftState($){
+  my $info = shift;
   return reverse ''
-    . revpadzero( 1, $inhibit)
+    . revpadzero( 1, $$info{inhibit})
     . revpadzero( 3, 0)
     . revpadzero( 4, 0)
-    . revpadzero(16, $min)
+    . revpadzero(16, $$info{min})
     . revpadzero( 8, 0)
   ;
 }
 
-sub writeInhibitCharge($$$){
-  my ($bat, $inhibit, $min) = @_;
+sub writeInhibitCharge($){
+  my $info = shift;
   return reverse ''
-    . revpadzero( 1, $inhibit)
+    . revpadzero( 1, $$info{inhibit})
     . revpadzero( 3, 0)
-    . revpadzero( 2, $bat)
+    . revpadzero( 2, $$info{bat})
     . revpadzero( 2, 0)
-    . revpadzero(16, $min)
+    . revpadzero(16, $$info{min})
     . revpadzero( 8, 0)
   ;
 }
 
-sub writeStartChargeThreshold($$){
-  my ($bat, $percent) = @_;
+sub writeStartChargeThreshold($){
+  my $info = shift;
   return reverse ''
-    . revpadzero( 8, $percent)
-    . revpadzero( 2, $bat)
+    . revpadzero( 8, $$info{percent})
+    . revpadzero( 2, $$info{bat})
     . revpadzero(22, 0)
   ;
 }
 
-sub writeStopChargeThreshold($$){
-  my ($bat, $percent) = @_;
+sub writeStopChargeThreshold($){
+  my $info = shift;
   return reverse ''
-    . revpadzero( 8, $percent)
-    . revpadzero( 2, $bat)
+    . revpadzero( 8, $$info{percent})
+    . revpadzero( 2, $$info{bat})
     . revpadzero(22, 0)
   ;
 }
 
-sub writeForceDischarge($$$){
-  my ($bat, $discharge, $acBreak) = @_;
+sub writeForceDischarge($){
+  my $info = shift;
   return reverse ''
-    . revpadzero( 1, $discharge)
-    . revpadzero( 1, $acBreak)
+    . revpadzero( 1, $$info{discharge})
+    . revpadzero( 1, $$info{acbreak})
     . revpadzero( 6, 0)
-    . revpadzero( 2, $bat)
+    . revpadzero( 2, $$info{bat})
     . revpadzero(22, 0)
   ;
 }
