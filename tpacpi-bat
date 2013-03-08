@@ -68,25 +68,30 @@ sub binToHex($);
 
 our $verbose = 0;
 
+my ($methodST, $methodSP, $methodIC, $methodFD, $methodPS) =
+  ("startChargeThreshold", "stopChargeThreshold",
+   "inhibitCharge", "forceDischarge",
+   "peakShiftState");
 my $name = File::Basename::basename $0;
 my $usage = "Usage:
   Show this message:
     $name [-h|--help]
 
   Get inhibit charge / force discharge / thresholds:
-    $name [-v] startChargeThreshold -g <bat{1,2}>
-    $name [-v] stopChargeThreshold  -g <bat{1,2}>
-    $name [-v] inhibitCharge        -g <bat{1,2,0}>
-    $name [-v] forceDischarge       -g <bat{1,2}>
+    $name [-v] $methodST -g <bat{1,2}>
+    $name [-v] $methodSP -g <bat{1,2}>
+    $name [-v] $methodIC -g <bat{1,2,0}>
+    $name [-v] $methodFD -g <bat{1,2}>
 
   Set inhibit charge / force discharge / thresholds:
-    $name [-v] startChargeThreshold -s <bat{1,2,0}> <percent{0,1-99}>
-    $name [-v] stopChargeThreshold  -s <bat{1,2,0}> <percent{0,1-99}>
-    $name [-v] inhibitCharge        -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
-    $name [-v] forceDischarge       -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
-  Set peak shift state, which is mysterious and inhibits charge
+    $name [-v] $methodST -s <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] $methodSP -s <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] $methodIC -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
+    $name [-v] $methodFD -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
-    $name [-v] peakShiftState       -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
+  Set peak shift state, which is mysterious and inhibits charge
+    $name [-v] $methodPS -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
+
 
     -v           show ASL call and response
     <bat>        1 for main, 2 for secondary, 0 for either/both
@@ -102,16 +107,10 @@ my $usage = "Usage:
      number of bits for minutes, but inhibit shifts the bits left
 ";
 
-my $methods = join "|", qw(
-  startChargeThreshold stopChargeThreshold
-  inhibitCharge forceDischarge
-  peakShiftState
-);
-my $noReadMethods = join "|", qw(peakShiftState);
-my $noBothReadMethods = join "|", qw(
-  startChargeThreshold stopChargeThreshold forceDischarge
-);
-my $noBothWriteMethods = join "|", qw(forceDischarge);
+my $methods = join "|", ($methodST, $methodSP, $methodIC $methodFD, $methodPS);
+my $noReadMethods = join "|", ($methodPS);
+my $noBothReadMethods = join "|", ($methodST, $methodSP, $methodFD);
+my $noBothWriteMethods = join "|", ($methodFD);
 
 sub main(@){
   if(@_ == 1 and $_[0] =~ /^(-h|--help)$/){
@@ -128,7 +127,7 @@ sub main(@){
 
 
   my $bat;
-  if($method eq 'peakShiftState'){
+  if($method eq $methodPS){
     $bat = 0;
   }else{
     $bat = shift;
@@ -155,14 +154,14 @@ sub getMethod($$){
 
   $bat = parseArgDecToBin $bat;
 
-  if($method eq 'startChargeThreshold'){
+  if($method eq $methodST){
     return readStartChargeThreshold(acpiCallGet 'BCTG', $bat);
-  }elsif($method eq 'stopChargeThreshold'){
+  }elsif($method eq $methodSP){
     return readStopChargeThreshold(acpiCallGet 'BCSG', $bat);
-  }elsif($method eq 'inhibitCharge'){
+  }elsif($method eq $methodIC){
     #this is actually reading peak shift state
     return readInhibitCharge(acpiCallGet 'PSSG', $bat);
-  }elsif($method eq 'forceDischarge'){
+  }elsif($method eq $methodFD){
     return readForceDischarge(acpiCallGet 'BDSG', $bat);
   }else{
     die $usage;
@@ -179,7 +178,7 @@ sub setMethod($$@){
   my %info;
   $info{bat} = $bat;
 
-  if($method =~ /^(inhibitCharge|peakShiftState)$/){
+  if($method =~ /^($methodIC|$methodPS)$/){
     $info{inhibit} = shift @_;
     if(not defined $info{inhibit} or $info{inhibit} !~ /^0|1$/){
       die "missing or invalid value for <inhibit>\n";
@@ -191,13 +190,13 @@ sub setMethod($$@){
     #they are shifting a bit somewhere; the limit should be 1440
     #the same range in peak-shift-state is used, except shifted to the left
     #the value returned by peak-shift-state is the REAL duration, though
-    $info{min} *= 2 if $method eq 'inhibitCharge';
+    $info{min} *= 2 if $method eq $methodIC;
     ############################################################
 
     if($info{min} !~ /^\d+$/ or ($info{min} > 1440 and $info{min} != 65535)){
       die "invalid value for <min>\n";
     }
-  }elsif($method =~ /^(forceDischarge)$/){
+  }elsif($method =~ /^($methodFD)$/){
     $info{discharge} = shift @_;
     if(not defined $info{discharge} or $info{discharge} !~ /^0|1$/){
       die "missing or invalid value for <discharge>\n";
@@ -208,7 +207,7 @@ sub setMethod($$@){
     if($info{acbreak} !~ /^0|1$/){
       die "invalid value for <acbreak>\n";
     }
-  }elsif($method =~ /^(startChargeThreshold|stopChargeThreshold)$/){
+  }elsif($method =~ /^($methodST|$methodSP)$/){
     $info{percent} = shift @_;
     if(not defined $info{percent} or $info{percent} !~ /^\d+$/ or $info{percent} > 99){
       die "missing or invalid value for <percent>\n";
@@ -218,15 +217,15 @@ sub setMethod($$@){
 
   %info = map {$_ => parseArgDecToBin $info{$_}} keys %info;
 
-  if($method eq 'startChargeThreshold'){
+  if($method eq $methodST){
     acpiCallSet 'BCCS', writeStartChargeThreshold(\%info);
-  }elsif($method eq 'stopChargeThreshold'){
+  }elsif($method eq $methodSP){
     acpiCallSet 'BCSS', writeStopChargeThreshold(\%info);
-  }elsif($method eq 'inhibitCharge'){
+  }elsif($method eq $methodIC){
     acpiCallSet 'BICS', writeInhibitCharge(\%info);
-  }elsif($method eq 'forceDischarge'){
+  }elsif($method eq $methodFD){
     acpiCallSet 'BDSS', writeForceDischarge(\%info);
-  }elsif($method eq 'peakShiftState'){
+  }elsif($method eq $methodPS){
     acpiCallSet 'PSSS', writePeakShiftState(\%info);
   }else{
     die $usage;
