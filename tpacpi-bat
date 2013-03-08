@@ -88,18 +88,18 @@ my $usage = "Usage:
 
     $name [-v] peakShiftState       -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
 
-  -v           show ASL call and response
-  <bat>        1 for main, 2 for secondary, 0 for either/both
-  <min>        minutes, or 0 for never, or 65535 for forever
-  <percent>    0 for default, 1-99 for percentage
-  <inhibit>    1 for inhibit, 0 for dont inhibit
-  <discharge>  1 for force discharge, 0 for stop forcing discharge
-  <acbreak>    1 for stop forcing when AC is detached, 0 for do not
-  [] means optional: sets value to 0
+    -v           show ASL call and response
+    <bat>        1 for main, 2 for secondary, 0 for either/both
+    <min>        minutes, or 0 for never, or 65535 for forever
+    <percent>    0 for default, 1-99 for percentage
+    <inhibit>    1 for inhibit, 0 for dont inhibit
+    <discharge>  1 for force discharge, 0 for stop forcing discharge
+    <acbreak>    1 for stop forcing when AC is detached, 0 for do not
+    [] means optional: sets value to 0
   
-  *likely bug in BIOS code
-   in the docs, inhibit-charge and peak-shift-state both indicate the same
-   number of bits for minutes, but inhibit shifts the bits left
+    *likely bug in BIOS code
+     in the docs, inhibit-charge and peak-shift-state both indicate the same
+     number of bits for minutes, but inhibit shifts the bits left
 ";
 
 my $methods = join "|", qw(
