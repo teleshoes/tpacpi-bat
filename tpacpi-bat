@@ -85,16 +85,16 @@ my $usage = "Usage:
     $name [-h|--help]
 
   Get charge thresholds / inhibit charge / force discharge:
-    $name [-v] $methodST -g <bat{1,2}>
-    $name [-v] $methodSP -g <bat{1,2}>
-    $name [-v] $methodIC -g <bat{1,2,0}>
-    $name [-v] $methodFD -g <bat{1,2}>
+    $name [-v] -g $methodST <bat{1,2}>
+    $name [-v] -g $methodSP <bat{1,2}>
+    $name [-v] -g $methodIC <bat{1,2,0}>
+    $name [-v] -g $methodFD <bat{1,2}>
 
   Set charge thresholds / inhibit charge / force discharge:
-    $name [-v] $methodST -s <bat{1,2,0}> <percent{0,1-99}>
-    $name [-v] $methodSP -s <bat{1,2,0}> <percent{0,1-99}>
-    $name [-v] $methodIC -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
-    $name [-v] $methodFD -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
+    $name [-v] -s $methodST <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] -s $methodSP <bat{1,2,0}> <percent{0,1-99}>
+    $name [-v] -s $methodIC <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
+    $name [-v] -s $methodFD <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
   Set peak shift state, which is mysterious and inhibits charge:
     $name [-v] $methodPS -s <inhibit{1,0}> [<min{0,1-1440,65535}>]

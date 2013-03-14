@@ -14,16 +14,16 @@ Usage:
     tpacpi-bat [-h|--help]
 
   Get charge thresholds / inhibit charge / force discharge:
-    tpacpi-bat [-v] ST -g <bat{1,2}>
-    tpacpi-bat [-v] SP -g <bat{1,2}>
-    tpacpi-bat [-v] IC -g <bat{1,2,0}>
-    tpacpi-bat [-v] FD -g <bat{1,2}>
+    tpacpi-bat [-v] -g ST <bat{1,2}>
+    tpacpi-bat [-v] -g SP <bat{1,2}>
+    tpacpi-bat [-v] -g IC <bat{1,2,0}>
+    tpacpi-bat [-v] -g FD <bat{1,2}>
 
   Set charge thresholds / inhibit charge / force discharge:
-    tpacpi-bat [-v] ST -s <bat{1,2,0}> <percent{0,1-99}>
-    tpacpi-bat [-v] SP -s <bat{1,2,0}> <percent{0,1-99}>
-    tpacpi-bat [-v] IC -s <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
-    tpacpi-bat [-v] FD -s <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
+    tpacpi-bat [-v] -s ST <bat{1,2,0}> <percent{0,1-99}>
+    tpacpi-bat [-v] -s SP <bat{1,2,0}> <percent{0,1-99}>
+    tpacpi-bat [-v] -s IC <bat{1,2,0}> <inhibit{1,0}> [<min{0,1-720,65535}>]
+    tpacpi-bat [-v] -s FD <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
   Set peak shift state, which is mysterious and inhibits charge:
     tpacpi-bat [-v] PS -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
