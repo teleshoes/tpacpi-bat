@@ -97,7 +97,7 @@ my $usage = "Usage:
     $name [-v] -s $methodFD <bat{1,2}> <discharge{1,0}> [<acbreak{1,0}>]
 
   Set peak shift state, which is mysterious and inhibits charge:
-    $name [-v] $methodPS -s <inhibit{1,0}> [<min{0,1-1440,65535}>]
+    $name [-v] -s $methodPS <inhibit{1,0}> [<min{0,1-1440,65535}>]
 
 
   Synonyms:
