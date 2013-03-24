@@ -41,6 +41,9 @@ use File::Basename;
 my $acpiCallDev = '/proc/acpi/call';
 my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
 
+sub getMethod($$);
+sub setMethod($$@);
+
 sub readPeakShiftState($);
 sub readInhibitCharge($);
 sub readStartChargeThreshold($);
@@ -53,6 +56,7 @@ sub writeStartChargeThreshold($);
 sub writeStopChargeThreshold($);
 sub writeForceDischarge($);
 
+sub acpiCall($);
 sub acpiCallGet($$);
 sub acpiCallSet($$);
 
