@@ -39,10 +39,8 @@ use warnings;
 use File::Basename;
 
 my $acpiCallDev = '/proc/acpi/call';
-my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
-
-sub getMethod($$);
-sub setMethod($$@);
+sub getMethod($$$);
+sub setMethod($$$@);
 
 sub readPeakShiftState($);
 sub readInhibitCharge($);
@@ -57,8 +55,8 @@ sub writeStopChargeThreshold($);
 sub writeForceDischarge($);
 
 sub acpiCall($);
-sub acpiCallGet($$);
-sub acpiCallSet($$);
+sub acpiCallGet($$$);
+sub acpiCallSet($$$);
 
 sub revpadzero($$);
 
@@ -143,6 +141,7 @@ sub main(@){
   }
   die $usage if not defined $method or $cmd !~ /^(-g|-s)$/;
 
+  my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
 
   my $bat;
   if($method eq $methodPS){
@@ -153,13 +152,14 @@ sub main(@){
   die "<bat> missing or incorrect\n" if not defined $bat or $bat !~ /^0|1|2$/;
 
   if($cmd eq '-g' and @_ == 0){
-    print getMethod($method, $bat) . "\n";
+    print getMethod($aslBase, $method, $bat) . "\n";
   }elsif($cmd eq '-s'){
-    print setMethod($method, $bat, @_);
+    print setMethod($aslBase, $method, $bat, @_);
   }
 }
 
-sub getMethod($$){
+sub getMethod($$$){
+  my $aslBase = shift;
   my $method = shift;
   my $bat = shift;
 
@@ -173,19 +173,20 @@ sub getMethod($$){
   $bat = parseArgDecToBin $bat;
 
   if($method eq $methodST){
-    return readStartChargeThreshold(acpiCallGet 'BCTG', $bat);
+    return readStartChargeThreshold(acpiCallGet $aslBase, 'BCTG', $bat);
   }elsif($method eq $methodSP){
-    return readStopChargeThreshold(acpiCallGet 'BCSG', $bat);
+    return readStopChargeThreshold(acpiCallGet $aslBase, 'BCSG', $bat);
   }elsif($method eq $methodIC){
     #this is actually reading peak shift state
-    return readInhibitCharge(acpiCallGet 'PSSG', $bat);
+    return readInhibitCharge(acpiCallGet $aslBase, 'PSSG', $bat);
   }elsif($method eq $methodFD){
-    return readForceDischarge(acpiCallGet 'BDSG', $bat);
+    return readForceDischarge(acpiCallGet $aslBase, 'BDSG', $bat);
   }else{
     die $usage;
   }
 }
-sub setMethod($$@){
+sub setMethod($$$@){
+  my $aslBase = shift;
   my $method = shift;
   my $bat = shift;
 
@@ -236,15 +237,15 @@ sub setMethod($$@){
   %info = map {$_ => parseArgDecToBin $info{$_}} keys %info;
 
   if($method eq $methodST){
-    acpiCallSet 'BCCS', writeStartChargeThreshold(\%info);
+    acpiCallSet $aslBase, 'BCCS', writeStartChargeThreshold(\%info);
   }elsif($method eq $methodSP){
-    acpiCallSet 'BCSS', writeStopChargeThreshold(\%info);
+    acpiCallSet $aslBase, 'BCSS', writeStopChargeThreshold(\%info);
   }elsif($method eq $methodIC){
-    acpiCallSet 'BICS', writeInhibitCharge(\%info);
+    acpiCallSet $aslBase, 'BICS', writeInhibitCharge(\%info);
   }elsif($method eq $methodFD){
-    acpiCallSet 'BDSS', writeForceDischarge(\%info);
+    acpiCallSet $aslBase, 'BDSS', writeForceDischarge(\%info);
   }elsif($method eq $methodPS){
-    acpiCallSet 'PSSS', writePeakShiftState(\%info);
+    acpiCallSet $aslBase, 'PSSS', writePeakShiftState(\%info);
   }else{
     die $usage;
   }
@@ -394,8 +395,8 @@ sub acpiCall($){
   close FH;
   return $val;
 }
-sub acpiCallGet($$){
-  my ($method, $bits) = @_;
+sub acpiCallGet($$$){
+  my ($aslBase, $method, $bits) = @_;
   my $call = "$aslBase.$method 0x" . binToHex($bits);
   print "Call    : $call\n" if $verbose;
   my $val = acpiCall $call;
@@ -405,8 +406,8 @@ sub acpiCallGet($$){
   }
   return $val;
 }
-sub acpiCallSet($$){
-  my ($method, $bits) = @_;
+sub acpiCallSet($$$){
+  my ($aslBase, $method, $bits) = @_;
   my $call = "$aslBase.$method 0x" . binToHex($bits);
   print "Call    : $call\n" if $verbose;
   my $val = acpiCall $call;
