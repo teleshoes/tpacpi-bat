@@ -39,6 +39,10 @@ use warnings;
 use File::Basename;
 
 my $acpiCallDev = '/proc/acpi/call';
+my $aslBases = {
+  'default'        => '\_SB.PCI0.LPC.EC.HKEY',
+};
+
 sub getMethod($$$);
 sub setMethod($$$@);
 
@@ -54,6 +58,7 @@ sub writeStartChargeThreshold($);
 sub writeStopChargeThreshold($);
 sub writeForceDischarge($);
 
+sub getASLBase();
 sub acpiCall($);
 sub acpiCallGet($$$);
 sub acpiCallSet($$$);
@@ -141,7 +146,7 @@ sub main(@){
   }
   die $usage if not defined $method or $cmd !~ /^(-g|-s)$/;
 
-  my $aslBase = '\_SB.PCI0.LPC.EC.HKEY';
+  my $aslBase = getASLBase();
 
   my $bat;
   if($method eq $methodPS){
@@ -376,6 +381,16 @@ sub writeForceDischarge($){
   ;
 }
 
+sub getASLBase(){
+  my $dmiVersion = `dmidecode --string=system-version 2>&1`;
+  chomp $dmiVersion;
+  for my $v(keys %$aslBases){
+    if($v eq $dmiVersion){
+      return $$aslBases{$v};
+    }
+  }
+  return $$aslBases{default};
+}
 
 sub acpiCall($){
   my $call = shift;
