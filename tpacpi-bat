@@ -387,7 +387,7 @@ sub writeForceDischarge($){
 }
 
 sub getASLBase(){
-  my $dmiVersion = `dmidecode --string=system-version 2>&1`;
+  my $dmiVersion = `cat /sys/class/dmi/id/product_version 2>/dev/null`;
   chomp $dmiVersion;
   for my $v(keys %$aslBases){
     if($v eq $dmiVersion){
