@@ -165,6 +165,8 @@ sub main(@){
     print getMethod($aslBase, $method, $bat) . "\n";
   }elsif($cmd eq '-s'){
     print setMethod($aslBase, $method, $bat, @_);
+  }else{
+    die $usage;
   }
 }
 
