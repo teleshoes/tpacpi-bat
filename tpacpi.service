@@ -3,8 +3,8 @@ Description=sets battery thresholds
 
 [Service]
 Type=oneshot
-ExecStart=tpacpi-bat -s ST 0 40
-ExecStart=tpacpi-bat -s SP 0 80
+ExecStart=/usr/bin/tpacpi-bat -s ST 0 40
+ExecStart=/usr/bin/tpacpi-bat -s SP 0 80
 
 [Install]
 WantedBy=multi-user.target
