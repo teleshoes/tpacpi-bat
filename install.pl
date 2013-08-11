@@ -4,7 +4,7 @@ use warnings;
 
 my $prefix = '/usr/local';
 my $acpiCallGitRepo = 'git://github.com/mkottman/acpi_call.git';
-my $acpiCallTag = "v1.0.0";
+my $acpiCallTag = "v1.1.0";
 
 sub runOrDie(@){
   print "@_\n";
