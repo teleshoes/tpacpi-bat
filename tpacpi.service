@@ -1,5 +1,6 @@
 [Unit]
 Description=sets battery thresholds
+After=tlp.service
 
 [Service]
 Type=oneshot
