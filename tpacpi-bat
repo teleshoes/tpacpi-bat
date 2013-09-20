@@ -46,7 +46,7 @@ my $aslBases = {
   'ThinkPad L[45][34]0'                   => '\_SB.PCI0.LPCB.H_EC.HKEY',
   'ThinkPad (Edge|).*S[45][34][01]'       => '\_SB.PCI0.LPCB.EC0.HKEY',
   'ThinkPad T430u'                        => '\_SB.PCI0.LPCB.EC.HKEY',
-  'ThinkPad X1[23[01]e'                   => '\_SB.PCI0.LPCB.EC.HKEY',
+  'ThinkPad X1[23][01]e'                   => '\_SB.PCI0.LPCB.EC.HKEY',
 };
 
 sub getMethod($$$);
