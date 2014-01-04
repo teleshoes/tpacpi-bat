@@ -26,6 +26,8 @@ sub main(@){
   runOrDie "git", "checkout", $acpiCallTag;
   runOrDie "make";
   runOrDie "sudo", "make", "install";
+  runOrDie "sudo", "depmod";
+  runOrDie "sudo", "modprobe", "acpi_call";
 }
 
 &main(@ARGV);
