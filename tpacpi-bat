@@ -450,7 +450,17 @@ sub parseArgDecToBin($){
 sub parseStatusHexToBitArray($){
   my $hex = shift;
   if($hex !~ /0x([0-9a-f]+)/i){
-    die "Bad status returned: $hex\n";
+    my $msg = "Bad status returned: $hex\n";
+    if($hex =~ /Error: AE_NOT_FOUND/){
+      $msg .= ''
+        . "ASL base not found for this machine\n"
+        . "  {perhaps it does not have the ThinkPad ACPI interface}\n"
+        . "ASL bases checked:\n  "
+        . (join "\n  ", @aslBases)
+        . "\n"
+        ;
+    }
+    die $msg;
   }
   return split //, revpadzero 32, hexToBin($1);
 }
