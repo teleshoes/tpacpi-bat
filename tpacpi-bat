@@ -387,6 +387,7 @@ sub acpiCall($){
   my $call = shift;
 
   if(not -e $acpiCallDev){
+    $ENV{'PATH'} = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
     system "modprobe acpi_call";
   }
   if(not -e $acpiCallDev){
