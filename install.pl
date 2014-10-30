@@ -19,7 +19,7 @@ sub main(@){
   if(versionCmp("3.17", $version) >= 0){
     $acpiCallTag = "3.17";
   }else{
-    $acpiCallTag = "v1.01";
+    $acpiCallTag = "v1.1.0";
   }
 
   my $localRepo = '/tmp/acpi_call';
