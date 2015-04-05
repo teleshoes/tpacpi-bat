@@ -40,7 +40,7 @@ use File::Basename;
 
 my $acpiCallDev = '/proc/acpi/call';
 
-my $acDevicePath = "/sys/class/power_supply/AC/device/path";
+my $bat0DevicePath = "/sys/class/power_supply/BAT0/device/path";
 
 sub getMethod($$);
 sub setMethod($$@);
@@ -387,15 +387,15 @@ sub acpiCall($){
   if(not -e $acpiCallDev){
     die "Could not find $acpiCallDev. Is module acpi_call loaded?\n";
   }
-  if(not -e $acDevicePath){
-    die "no AC device path to read ASL base from: $acDevicePath\n";
+  if(not -e $bat0DevicePath){
+    die "no BAT0 device path to read ASL base from: $bat0DevicePath\n";
   }
 
-  my $aslBase = `cat $acDevicePath`;
+  my $aslBase = `cat $bat0DevicePath`;
   chomp $aslBase;
 
   $aslBase =~ s/_+(\.|$)/$1/g; #trim trailing _s from components
-  $aslBase =~ s/AC$/HKEY/g;
+  $aslBase =~ s/BAT0$/HKEY/g;
 
   my $val = runAcpiCall $call, $aslBase;
   if($val =~ /Error: AE_NOT_FOUND/){
@@ -460,7 +460,7 @@ sub parseStatusHexToBitArray($){
       $msg .= ''
         . "ASL base not found for this machine\n"
         . "  {perhaps it does not have the ThinkPad ACPI interface}\n"
-        . "ASL base parsed using: $acDevicePath\n"
+        . "ASL base parsed using: $bat0DevicePath\n"
         ;
     }
     die $msg;
