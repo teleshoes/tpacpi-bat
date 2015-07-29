@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $prefix = '/usr/local';
+my $prefix = '/usr';
 my $acpiCallGitRepo = 'git://github.com/teleshoes/acpi_call.git';
 
 sub runOrDie(@){
