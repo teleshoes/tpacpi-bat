@@ -1,3 +1,4 @@
+```
 tpacpi-bat - ThinkPad ACPI Battery Util
 
 Exposes ACPI interface for battery controls.
@@ -45,3 +46,4 @@ Usage:
     <discharge>  1 for force discharge, 0 for stop forcing discharge
     <acbreak>    1 for stop forcing when AC is detached, 0 for do not
     [] means optional: sets value to 0
+```
