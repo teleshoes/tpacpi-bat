@@ -210,7 +210,7 @@ sub setMethod($$@){
     #they are shifting a bit somewhere; the limit should be 1440
     #the same range in peak-shift-state is used, except shifted to the left
     #the value returned by peak-shift-state is the REAL duration, though
-    $info{min} *= 2 if $method eq $methodIC;
+    $info{min} *= 2 if $method eq $methodIC and $info{min} != 65535;
     ############################################################
 
     if($info{min} !~ /^\d+$/ or ($info{min} > 1440 and $info{min} != 65535)){
