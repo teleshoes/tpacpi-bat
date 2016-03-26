@@ -14,14 +14,6 @@ sub runOrDie(@){
 sub main(@){
   runOrDie "sudo", "cp", "tpacpi-bat", "$prefix/bin";
 
-  my $acpiCallTag;
-  my $version = `uname -r`;
-  if(versionCmp("3.17", $version) >= 0){
-    $acpiCallTag = "3.17";
-  }else{
-    $acpiCallTag = "v1.1.0";
-  }
-
   my $localRepo = '/tmp/acpi_call';
   if(not -d $localRepo){
     runOrDie "git", "clone", $acpiCallGitRepo, $localRepo;
@@ -30,7 +22,7 @@ sub main(@){
   runOrDie "git", "fetch";
   runOrDie "git", "reset", "HEAD", "--hard";
   runOrDie "git", "clean", "-fd";
-  runOrDie "git", "checkout", $acpiCallTag;
+  runOrDie "git", "checkout", "origin/master";
   runOrDie "make";
   runOrDie "sudo", "make", "install";
   runOrDie "sudo", "depmod";
