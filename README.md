@@ -1,6 +1,7 @@
 [![Flattr Button](http://api.flattr.com/button/button-static-50x60.png "Flattr This!")](https://flattr.com/thing/1577449 "tpacpi-bat")
 
-# tpacpi-bat - ThinkPad ACPI Battery Util
+tpacpi-bat - ThinkPad ACPI Battery Util
+=======================================
 
 Exposes ACPI interface for battery controls.
 - force discharge
@@ -12,13 +13,15 @@ This project is licensed under the GPLv3. See COPYING for details.
 
 Copyright 2011,2013 Elliot Wolk
 
-## Installation Notes
+Installation Notes
+------------------
 
 - Install `tpacpi-bat` to place of your convenience, preferrably in `$PATH`.
 - Install `tpacpi.service` to your systemd unit directory (usually `/usr/lib/systemd/system`).
 - Install `tpacpi.conf.d` as `/etc/conf.d/tpacpi`.
 
-## Utility Usage
+Utility Usage
+-------------
 
 ```
 Usage:
