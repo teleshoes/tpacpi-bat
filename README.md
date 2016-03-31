@@ -11,7 +11,7 @@ Exposes ACPI interface for battery controls.
 
 This project is licensed under the GPLv3. See COPYING for details.
 
-Copyright 2011,2013 Elliot Wolk
+Copyright 2011-2016 Elliot Wolk
 
 Installation
 ------------
