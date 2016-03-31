@@ -1,0 +1,12 @@
+[Unit]
+Description=sets battery thresholds
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/conf.d/tpacpi
+ExecStart=/usr/bin/tpacpi-bat -s ST $STARTTHRES
+ExecStart=/usr/bin/tpacpi-bat -s SP $STOPTHRES
+
+[Install]
+WantedBy=multi-user.target
