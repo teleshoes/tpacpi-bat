@@ -13,15 +13,22 @@ This project is licensed under the GPLv3. See COPYING for details.
 
 Copyright 2011,2013 Elliot Wolk
 
-Installation Notes
-------------------
+Installation
+------------
 
-- Install `tpacpi-bat` to place of your convenience, preferrably in `$PATH`.
-- Install `tpacpi.service` to your systemd unit directory (usually `/usr/lib/systemd/system`).
-- Install `tpacpi.conf.d` as `/etc/conf.d/tpacpi`.
+- `install.pl` installs `acpi_call` from git and copies `tpacpi-bat` to /usr/bin
+- `acpi_call` is required (https://github.com/teleshoes/acpi_call.git)
+- `tpacpi-bat` has no other requirements besides perl; put it where you like
 
-Utility Usage
--------------
+Startup systemd service
+-----------------------
+
+- Edit desired thresholds in `examples/tpacpi.conf.d`
+- Copy `examples/tpacpi.service` to systemd unit dir (`/usr/lib/systemd/system`)
+- Copy `tpacpi.conf.d` to `/etc/conf.d/tpacpi`
+
+Usage
+-----
 
 ```
 Usage:
