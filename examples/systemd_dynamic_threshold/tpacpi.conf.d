@@ -1,5 +1,8 @@
-# Start charging threshold, in format "lower-bound higher-bound".
-STARTTHRES="0 40"
+# battery is 1 for main, 2 for secondary, or 0 for either/both
+BATTERY="0"
 
-# Stop charging threshold, in format "lower-bound higher-bound".
-STOPTHRES="0 80"
+# Start charging threshold (0 for default, 1-99 for percent)
+START_THRESHOLD="40"
+
+# Stop charging threshold (0 for default, 1-99 for percent)
+STOP_THRESHOLD="80"
