@@ -27,6 +27,11 @@ Startup systemd service
 - Copy `examples/tpacpi.service` to systemd unit dir (`/usr/lib/systemd/system`)
 - Copy `tpacpi.conf.d` to `/etc/conf.d/tpacpi`
 
+Supported Hardware
+------------------
+There is an unofficial, community-maintained list of supported ThinkPads here:
+[Supported Hardware](../../wiki/Supported-Hardware)
+
 Usage
 -----
 
