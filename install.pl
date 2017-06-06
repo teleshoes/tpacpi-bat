@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 my $prefix = '/usr';
-my $acpiCallGitRepo = 'git://github.com/teleshoes/acpi_call.git';
+my $acpiCallGitRepo = 'https://github.com/teleshoes/acpi_call.git';
 
 sub runOrDie(@){
   print "@_\n";
