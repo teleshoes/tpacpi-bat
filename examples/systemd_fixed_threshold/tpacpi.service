@@ -6,8 +6,8 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/tpacpi-bat -s ST 0 40
 ExecStart=/usr/bin/tpacpi-bat -s SP 0 80
-ExecStop=/usr/bin/tpacpi-bat -s ST $BATTERY 0
-ExecStop=/usr/bin/tpacpi-bat -s SP $BATTERY 0
+ExecStop=/usr/bin/tpacpi-bat -s ST 0 0
+ExecStop=/usr/bin/tpacpi-bat -s SP 0 0
 
 [Install]
 WantedBy=multi-user.target
