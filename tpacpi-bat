@@ -42,12 +42,15 @@ my $acpiCallDev = '/proc/acpi/call';
 
 my $psDeviceGlob = "/sys/class/power_supply/{BAT0,BAT1,AC,ADP0,ADP1}/device/path";
 
+sub quickMethod($@);
 sub getMethod($$);
 sub setMethod($$@);
 
 sub readPeakShiftState($);
 sub readInhibitCharge($);
+sub rawReadStartChargeThreshold($);
 sub readStartChargeThreshold($);
+sub rawReadStopChargeThreshold($);
 sub readStopChargeThreshold($);
 sub readForceDischarge($);
 
@@ -75,20 +78,37 @@ sub synList(@);
 
 our $verbose = 0;
 
-my ($methodST, $methodSP, $methodIC, $methodFD, $methodPS) =
-  ("ST", "SP", "IC", "FD", "PS");
+my ($methodST, $methodSP, $methodIC, $methodFD, $methodPS,
+    $methodLIFE, $methodDEFS, $methodFULL, $methodQUERY) =
+    ("ST", "SP", "IC", "FD", "PS",
+     "maxlife", "defaults", "full", "query");
 my $methodSyns = {
   $methodST => synList ("st", "startThreshold", "start"),
   $methodSP => synList ("sp", "stopThreshold", "stop"),
   $methodIC => synList ("ic", "inhibitCharge", "inhibit"),
   $methodFD => synList ("fd", "forceDischarge"),
   $methodPS => synList ("ps", "peakShiftState"),
+  $methodLIFE => synList ("maxlife", "longevity"),
+  $methodDEFS => synList ("defaults", "default"),
+  $methodFULL => synList ("full", "fullish"),
+  $methodQUERY => synList ("query", "thresholds"),
 };
+
+# (fixme?) "Quick" commands is a bit of a misnomer, salient feature is not speed
+# but these are Handy since you needn't invoke tpacpi-bat multiple times and
+# arguments and output should be simple and clear
+# ie Quick commands are simpler to type from the command line
 
 my $name = File::Basename::basename $0;
 my $usage = "Usage:
   Show this message:
     $name [-h|--help]
+
+  Quick threshold commands:
+    $name [-v] -q $methodLIFE [<start> <stop>] (sets battery charge thresholds, or 38-75%)
+    $name [-v] -q $methodDEFS (restores default thresholds for max charge)
+    $name [-v] -q $methodFULL (keeps battery rather full)
+    $name [-v] -q $methodQUERY (shows battery charge thresholds)
 
   Get charge thresholds / inhibit charge / force discharge:
     $name [-v] -g $methodST <bat{1,2}>
@@ -111,6 +131,10 @@ my $usage = "Usage:
     $methodIC -> $$methodSyns{$methodIC}
     $methodFD -> $$methodSyns{$methodFD}
     $methodPS -> $$methodSyns{$methodPS}
+    $methodLIFE -> $$methodSyns{$methodLIFE}
+    $methodDEFS -> $$methodSyns{$methodDEFS}
+    $methodFULL -> $$methodSyns{$methodFULL}
+    $methodQUERY -> $$methodSyns{$methodQUERY}
 
   Options:
     -v           show ASL call and response
@@ -126,6 +150,8 @@ my $usage = "Usage:
 my $noReadMethods = join "|", ($methodPS);
 my $noBothReadMethods = join "|", ($methodST, $methodSP, $methodFD);
 my $noBothWriteMethods = join "|", ($methodFD);
+my $quickMethods = join "|", ($methodLIFE, $methodDEFS, $methodFULL, $methodQUERY);
+my $quickSetMethods = join "|", ($methodLIFE, $methodDEFS, $methodFULL);
 
 sub main(@){
   if(@_ == 1 and $_[0] =~ /^(-h|--help)$/){
@@ -142,23 +168,115 @@ sub main(@){
   for my $m(keys %$methodSyns){
     $method = $m if $methodSyn eq $m or $methodSyn =~ /^($$methodSyns{$m})$/;
   }
-  die $usage if not defined $method or $cmd !~ /^(-g|-s)$/;
+  die $usage if not defined $method or $cmd !~ /^(-g|-s|-q)$/;
 
   my $bat;
-  if($method eq $methodPS){
+  if($method =~ /^($quickMethods)$/){
+    # no battery argument for quick methods,
+    # these just query first battery, then set all batteries accordingly
+    # (fixme awkward) could roll this into following elsif, and $bat not used
+    #   and $methodQUERY should be working on all extant batteries
+    #   none of this is necessary & I just want to pass though to the 
+    #   method dispatch for the quick (multiple setter) methods, grrr
+    $bat = 0;
+  }elsif($method eq $methodPS){
     $bat = 0;
   }else{
     $bat = shift;
   }
   die "<bat> missing or incorrect\n" if not defined $bat or $bat !~ /^0|1|2$/;
 
-  if($cmd eq '-g' and @_ == 0){
+  # validate arguments and invoke method
+  if($cmd eq '-q' and 
+     (($method eq $methodLIFE and @_ == 2) or
+      ($method =~ /^($quickMethods)$/ and @_ == 0))){
+        quickMethod($method, @_);
+  }elsif($cmd eq '-g' and @_ == 0){
     print getMethod($method, $bat) . "\n";
   }elsif($cmd eq '-s'){
     print setMethod($method, $bat, @_);
   }else{
     die $usage;
   }
+}
+
+sub quickMethod($@){
+    my $method = shift;
+    my @args = @_;
+    
+    if($method =~ /^($quickSetMethods)$/){
+	my $threshWasSet = 0;
+	my $desiredStart;
+	my $desiredStop;
+	# I'm just reading the thresholds for the main battery
+	# but I'm going to set thesholds for all batteries if main needs setting
+	if ($method eq $methodLIFE){
+	    if (@args == 2){
+		($desiredStart,$desiredStop) = map { int $_ } @args;
+		
+		if ((0 < $desiredStart) && 
+		    ($desiredStart < $desiredStop) && 
+		    ($desiredStop <= 99)) {
+		    # all is ok
+		} else {
+		    die "bad thresholds\n";
+		}
+	    }else{
+		# thresholds near 50% cause least battery wear
+		# discharging towards zero and charging near 100% causes ever increasing wear
+		# I'd like to keep a reasonable charge without letting it get well below 50%
+		# or near to 100%
+		# fixme: what to do with opinionated magic constants?
+		$desiredStart = 38;
+		$desiredStop = 75;
+	    }
+	}elsif ($method eq $methodDEFS){
+	    # keep battery fully charged
+	    $desiredStart = 0;
+	    $desiredStop = 0;
+	}elsif ($method eq $methodFULL){
+	    # if below 91%, charge up to 94%
+	    # this should wear the battery less than completely full charge,
+	    # but still give long runtime when you disconnect power
+	    # fixme: what to do with opinionated magic constants?
+	    $desiredStart = 91;
+	    $desiredStop = 94;
+	}
+	my $startThresh = rawReadStartChargeThreshold(acpiCallGet 'BCTG', 1);
+	my $stopThresh = rawReadStopChargeThreshold(acpiCallGet 'BCSG', 1);
+	
+	
+	if ( $startThresh != $desiredStart) {
+	    # will set thresholds for all batteries (0)
+	    my %infoStart;
+	    $infoStart{bat} = 0;
+	    $infoStart{percent} = $desiredStart;
+	    %infoStart = map {$_ => parseArgDecToBin $infoStart{$_}} keys %infoStart;
+	    acpiCallSet 'BCCS', writeStartChargeThreshold(\%infoStart);
+	    $threshWasSet = 1;
+	}
+	if ( $stopThresh != $desiredStop) {
+	    my %infoStop;
+	    $infoStop{bat} = 0;
+	    $infoStop{percent} = $desiredStop;
+	    %infoStop = map {$_ => parseArgDecToBin $infoStop{$_}} keys %infoStop;
+	    acpiCallSet 'BCSS', writeStopChargeThreshold(\%infoStop);
+	    $threshWasSet = 1;
+	}
+	if ($threshWasSet) { 
+	    print "Battery charge thresholds set: " . $desiredStart . "-" . $desiredStop . "%\n";
+	}else {
+	    print "Battery thresholds remain " . $startThresh . "-" . $stopThresh . "% ";
+	    print "All right!\n" ; 
+	}
+    } elsif ($method eq $methodQUERY){
+	# fixme! I don't know how to verify what batteries (1,2) are present...
+	for (my $i=1; $i <=1; $i++){
+	    my $startThresh = rawReadStartChargeThreshold(acpiCallGet 'BCTG', $i);
+	    my $stopThresh = rawReadStopChargeThreshold(acpiCallGet 'BCSG', $i);
+	    print "Battery $i thresholds are " . $startThresh . "-" . $stopThresh . "% \n";
+	}
+    }
 }
 
 sub getMethod($$){
@@ -274,12 +392,17 @@ sub readInhibitCharge($){
 
   return $val;
 }
-sub readStartChargeThreshold($){
+
+sub rawReadStartChargeThreshold($){
   my @bits = parseStatusHexToBitArray $_[0];
   if($bits[8] != 1 and $bits[9] != 1){
     die "<start charge threshold unsupported>\n";
   }
   my $val = bitRangeToDec @bits, 0, 7;
+  return $val;
+}
+sub readStartChargeThreshold($){
+  my $val = rawReadStartChargeThreshold($_[0]);
   if($val == 0){
     $val .= " (default)";
   }elsif($val > 0 and $val < 100){
@@ -290,12 +413,16 @@ sub readStartChargeThreshold($){
   return $val;
 }
 
-sub readStopChargeThreshold($){
+sub rawReadStopChargeThreshold($){
   my @bits = parseStatusHexToBitArray $_[0];
   if($bits[8] != 1 and $bits[9] != 1){
     die "<stop charge threshold unsupported>\n";
   }
   my $val = bitRangeToDec @bits, 0, 7;
+  return $val
+}
+sub readStopChargeThreshold($){
+  my $val = rawReadStopChargeThreshold($_[0]);
   if($val == 0){
     $val .= " (default)";
   }elsif($val > 0 and $val < 100){
