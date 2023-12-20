@@ -1,5 +1,3 @@
-[![Flattr Button](http://api.flattr.com/button/button-static-50x60.png "Flattr This!")](https://flattr.com/thing/1577449 "tpacpi-bat")
-
 tpacpi-bat - ThinkPad ACPI Battery Util
 =======================================
 
