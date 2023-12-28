@@ -1,3 +1,32 @@
+NOTE: tpacpi-bat superseded by thinkpad_acpi
+============================================
+As of Linux v5.17, the thinkpad_acpi kernel module has support for battery start/stop thresholds, inhibit charge and force discharge.
+
+These are rough equivalents of tpacpi-bat userspace commands in thinkpad_acpi.
+```
+# tpacpi-bat -s ST 1 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT0/charge_control_start_threshold
+# tpacpi-bat -s SP 1 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT0/charge_control_stop_threshold
+
+# tpacpi-bat -s ST 2 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT1/charge_control_start_threshold
+# tpacpi-bat -s SP 2 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT1/charge_control_stop_threshold
+
+# tpacpi-bat -s FD 1 1    =>   echo force-discharge | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
+# tpacpi-bat -s FD 1 0    =>   echo auto            | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
+# tpacpi-bat -s IC 1 1    =>   echo inhibit-charge  | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
+# tpacpi-bat -s IC 1 1    =>   echo auto            | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
+
+# tpacpi-bat -g ST 1      =>   cat /sys/class/power_supply/BAT0/charge_control_start_threshold
+# tpacpi-bat -g SP 1      =>   cat /sys/class/power_supply/BAT0/charge_control_stop_threshold
+
+# tpacpi-bat -g FD 1      =>   grep -q '\[force-discharge\]' /sys/class/power_supply/BAT0/charge_behaviour && echo yes || echo no
+# tpacpi-bat -g IC 1      =>   grep -q '\[inhibit-charge\]'  /sys/class/power_supply/BAT0/charge_behaviour && echo yes || echo no
+```
+
+There may be differences in implementation between tpacpi-bat and thinkpad_acpi. In general, instead of using tpacpi-bat + acpi_call, users should prefer using the thinkpad_acpi kernel module.
+The `acbreak` parameter to FD appears to be missing in thinkpad_acpi, but it usually doesn't work properly in tpacpi-bat anyway due to bugs or changes in the firmware driver.
+
+----
+
 tpacpi-bat - ThinkPad ACPI Battery Util
 =======================================
 
