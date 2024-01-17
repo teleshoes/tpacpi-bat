@@ -5,10 +5,10 @@ As of Linux v5.17, the thinkpad_acpi kernel module has support for battery start
 These are rough equivalents of tpacpi-bat userspace commands in thinkpad_acpi.
 ```
 # tpacpi-bat -s ST 1 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT0/charge_control_start_threshold
-# tpacpi-bat -s SP 1 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT0/charge_control_stop_threshold
+# tpacpi-bat -s SP 1 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT0/charge_control_end_threshold
 
 # tpacpi-bat -s ST 2 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT1/charge_control_start_threshold
-# tpacpi-bat -s SP 2 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT1/charge_control_stop_threshold
+# tpacpi-bat -s SP 2 90   =>   echo 90 | sudo tee /sys/class/power_supply/BAT1/charge_control_end_threshold
 
 # tpacpi-bat -s FD 1 1    =>   echo force-discharge | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
 # tpacpi-bat -s FD 1 0    =>   echo auto            | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
@@ -16,7 +16,7 @@ These are rough equivalents of tpacpi-bat userspace commands in thinkpad_acpi.
 # tpacpi-bat -s IC 1 1    =>   echo auto            | sudo tee /sys/class/power_supply/BAT0/charge_behaviour
 
 # tpacpi-bat -g ST 1      =>   cat /sys/class/power_supply/BAT0/charge_control_start_threshold
-# tpacpi-bat -g SP 1      =>   cat /sys/class/power_supply/BAT0/charge_control_stop_threshold
+# tpacpi-bat -g SP 1      =>   cat /sys/class/power_supply/BAT0/charge_control_end_threshold
 
 # tpacpi-bat -g FD 1      =>   grep -q '\[force-discharge\]' /sys/class/power_supply/BAT0/charge_behaviour && echo yes || echo no
 # tpacpi-bat -g IC 1      =>   grep -q '\[inhibit-charge\]'  /sys/class/power_supply/BAT0/charge_behaviour && echo yes || echo no
